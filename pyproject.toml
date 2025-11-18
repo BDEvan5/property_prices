@@ -14,3 +14,22 @@ dependencies = [
     "seaborn>=0.13.2",
     "vortex-data>=0.55.0",
 ]
+
+
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "F", # Pyflakes
+    "UP", # pyupgrade
+    "B", # flake8-bugbear
+    "SIM", # flake8-simplify
+    "I", # isort
+    "PGH", # flake8-pygrep-hooks
+    "C4", # flake8-comprehensions
+    "A", # flake8-builtins
+]
+ignore = ["PGH003", "PGH004"]

@@ -39,10 +39,10 @@ def _(mo, pd):
     mo.md(f"""
     ## Database Statistics
 
-     - Number of transactions: {int(_df.loc['count'].item())}
-     - Mean price (all transactions): {_df.loc['mean'].item():.2f} $\pm$ {_df.loc['std'].item():.2f}
-     - Median price: {_df.loc['50%'].item():.2f}
-     - Price range (cheapest to most expensive): {int(_df.loc['min'].item())} to {int(_df.loc['max'].item())}
+    - Number of transactions: {int(_df.loc['count'].item())}
+    - Mean price (all transactions): {_df.loc['mean'].item():.2f} $\pm$ {_df.loc['std'].item():.2f}
+    - Median price: {_df.loc['50%'].item():.2f}
+    - Price range (cheapest to most expensive): {int(_df.loc['min'].item())} to {int(_df.loc['max'].item())}
     """)
     return
 
@@ -173,15 +173,15 @@ def _(mo):
 @app.cell
 def _(mo):
 
-    number_of_years_selector = mo.ui.number(start=3, stop=12)
+    number_of_years_selector = mo.ui.slider(start=3, stop=12, label="Number of years to use to fit model", show_value=True)
     mo.md(f"""
     ### Backtesting
 
-    I used back testing to compare using varying numbers of years.
-    Back testing is where you use historical data to test your modelling approach.
+    Backtesting (where the model is tested on data that it has not seen before) is used to determine the best modelling approach. Linear models using 3 - 12 years of data are built and the mean absolute error is calculated for each model.
 
     You can view the predictions made by the different methods by selecting a number of years between 3 and 12 and then see the graph below.
-    Number of years used to fit the model: {number_of_years_selector}
+
+    {number_of_years_selector}
     """)
     return (number_of_years_selector,)
 

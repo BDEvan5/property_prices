@@ -71,7 +71,8 @@ def _(mo):
 @app.cell
 def _(mo, palette, pd, plt):
     data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
-    _df = pd.read_csv(str(data_path))
+    print(data_path)
+    _df = pd.read_csv(str(data_path), compression=None)
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 4))
 

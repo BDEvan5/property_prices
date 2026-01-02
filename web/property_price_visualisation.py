@@ -22,8 +22,10 @@ def _():
 @app.cell
 def _():
     import os
-    if os.getcwd().endswith("web"):
+    if os.getcwd().endswith("web") or os.getcwd().endswith("output_dir"):
         os.chdir("..")
+
+    print(os.getcwd())
     return
 
 
@@ -52,7 +54,7 @@ def _(mo):
 def _(mo, pd):
     mo.md("""## Database Statistics""")
 
-    _df = pd.read_csv("public/transaction_summary.csv", index_col=0)
+    _df = pd.read_csv(str(mo.notebook_location()) + "/public/transaction_summary.csv", index_col=0)
 
     mo.md("""## Database Statistics""")
 
@@ -76,9 +78,9 @@ def _(mo):
 
 
 @app.cell
-def _(palette, pd, plt):
+def _(mo, palette, pd, plt):
 
-    _df = pd.read_csv("public/avg_yearly_sales.csv")
+    _df = pd.read_csv(str(mo.notebook_location()) + "/public/avg_yearly_sales.csv")
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 4))
 
@@ -127,10 +129,10 @@ def _(mo):
 
 
 @app.cell
-def _(LinearRegression, palette, pd, plt, start_error_year):
+def _(LinearRegression, mo, palette, pd, plt, start_error_year):
     model_idx_1 = 3
     model_idx_2 = 12
-    _df = pd.read_csv("public/model_predictions.csv")
+    _df = pd.read_csv(str(mo.notebook_location()) + "/public/model_predictions.csv")
 
     plt.figure(figsize=(10, 4))
     _df = _df[_df["year"] >= start_error_year]
@@ -193,9 +195,9 @@ def _(mo):
 
 
 @app.cell
-def _(number_of_years_selector, palette, pd, plt, start_error_year):
+def _(mo, number_of_years_selector, palette, pd, plt, start_error_year):
     model_idx = number_of_years_selector.value
-    _df = pd.read_csv("public/model_predictions.csv")
+    _df = pd.read_csv(str(mo.notebook_location()) + "/public/model_predictions.csv")
 
     plt.figure(figsize=(8, 3))
     _df = _df[_df["year"] >= start_error_year]
@@ -224,8 +226,8 @@ def _(mo):
 
 
 @app.cell
-def _(np, pd, plt):
-    _df = pd.read_csv("public/model_predictions.csv")
+def _(mo, np, pd, plt):
+    _df = pd.read_csv(str(mo.notebook_location()) + "/public/model_predictions.csv")
 
     start_year = _df["year"].min()
     model_periods = [int(col.split("_")[-1]) for col in _df.columns if "prediction" in col]
@@ -260,10 +262,10 @@ def _(mo):
 
 
 @app.cell
-def _(palette, pd, plt, start_error_year):
+def _(mo, palette, pd, plt, start_error_year):
     from sklearn.linear_model import LinearRegression
     selected_model_idx = 6
-    _df = pd.read_csv("public/model_predictions.csv")
+    _df = pd.read_csv(str(mo.notebook_location()) + "/public/model_predictions.csv")
 
     model = LinearRegression()
     train_start_year = 2025 - selected_model_idx

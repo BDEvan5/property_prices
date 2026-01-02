@@ -82,7 +82,7 @@ def _(mo):
 @app.cell
 def _(con):
     df = con.sql("SELECT * FROM year_avg_data").df()
-    df.to_csv("public/avg_yearly_sales.csv", index=False)
+    df.to_csv("web/public/avg_yearly_sales.csv", index=False)
     print(df.shape)
     df.sample(5)
     return (df,)

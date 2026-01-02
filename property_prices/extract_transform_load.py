@@ -190,7 +190,7 @@ def _(mo):
 @app.cell
 def _(df_transactions):
     transaction_summary = df_transactions["price_paid"].describe(percentiles=[0.5])
-    transaction_summary.to_csv("public/transaction_summary.csv")
+    transaction_summary.to_csv("web/publictransaction_summary.csv")
     transaction_summary
     return
 

@@ -74,9 +74,30 @@ def _(mo):
 
 
 @app.cell
+def _(pd):
+    _df = pd.read_csv("https://bdevan5.github.io/property_prices/public/avg_yearly_sales.csv")
+    _df
+    return
+
+
+@app.cell
+def _(mo, pd):
+    # Get the base directory/URL, then resolve the relative path properly
+    base_url = str(mo.notebook_location()).split("/", 3)[:3]
+    base_url = "/".join(base_url) + "/"
+
+    data_url = base_url + "public/avg_yearly_sales.csv"
+    print(data_url)  # Will print: https://bdevan5.github.io/property_prices/public/avg_yearly_sales.csv
+
+    _df = pd.read_csv(data_url)
+    _df
+    return
+
+
+@app.cell
 def _(mo, palette, pd, plt):
     data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
-    print(data_path)
+    print(str(data_path))
     _df = pd.read_csv(str(data_path), compression=None, header=0, index_col=None)
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 4))

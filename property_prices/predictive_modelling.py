@@ -12,13 +12,17 @@ def _():
     import matplotlib.pyplot as plt
     import duckdb
     import pandas as pd
+
+    import os
+    if os.getcwd().endswith("property_prices/property_prices"):
+        os.chdir("..")
     return LinearRegression, duckdb, np, plt
 
 
 @app.cell
 def _(duckdb):
 
-    con = duckdb.connect("../data/main.db")
+    con = duckdb.connect("data/main.db")
     df = con.sql("""SELECT * FROM year_avg_data""").df()
 
     START_YEAR = df["year"].min()
@@ -45,7 +49,7 @@ def _(END_YEAR, LinearRegression, START_YEAR, df, model_periods):
             prediction = model_i.predict([[end]])
             df.loc[i + model_period, f"prediction_{model_period}"] = prediction
 
-    df.to_csv("../data/web/model_predictions.csv", index=False)
+    df.to_csv("public/model_predictions.csv", index=False)
     return
 
 

@@ -19,8 +19,12 @@ def _():
 
     import duckdb
 
-    con = duckdb.connect("../data/main.db")
-    DATA_DIR = Path("../data/raw_land_registry")
+    import os
+    if os.getcwd().endswith("property_prices/property_prices"):
+        os.chdir("..")
+
+    con = duckdb.connect("data/main.db")
+    DATA_DIR = Path("data/raw_land_registry")
     return DATA_DIR, con, pd
 
 
@@ -186,17 +190,8 @@ def _(mo):
 @app.cell
 def _(df_transactions):
     transaction_summary = df_transactions["price_paid"].describe(percentiles=[0.5])
-    transaction_summary.to_csv("../data/web/transaction_summary.csv")
+    transaction_summary.to_csv("public/transaction_summary.csv")
     transaction_summary
-    return
-
-
-@app.cell
-def _(df_transactions):
-    transactions_per_year = df_transactions.groupby(df_transactions['deed_date'].dt.year).size()
-    transactions_per_year = transactions_per_year.reset_index().rename(columns={0: 'count'})
-    transactions_per_year.to_csv('../data/web/transactions_per_year.csv')
-    transactions_per_year
     return
 
 

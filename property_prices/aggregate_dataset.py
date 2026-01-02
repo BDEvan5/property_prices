@@ -11,6 +11,11 @@ def _():
     import matplotlib.pyplot as plt
     import duckdb
     import pandas as pd
+
+    import os
+    if os.getcwd().endswith("property_prices/property_prices"):
+        os.chdir("..")
+
     return duckdb, pd, plt
 
 
@@ -25,7 +30,7 @@ def _(mo):
 @app.cell
 def _(duckdb):
 
-    con = duckdb.connect("../data/main.db")
+    con = duckdb.connect("data/main.db")
 
     con.sql("DROP TABLE IF EXISTS year_avg_data")
     con.sql("""
@@ -77,7 +82,7 @@ def _(mo):
 @app.cell
 def _(con):
     df = con.sql("SELECT * FROM year_avg_data").df()
-    df.to_csv("../data/web/avg_yearly_sales.csv", index=False)
+    df.to_csv("public/avg_yearly_sales.csv", index=False)
     print(df.shape)
     df.sample(5)
     return (df,)
@@ -125,7 +130,7 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_interest = pd.read_csv("../data/interest_rates.csv")
+    df_interest = pd.read_csv("data/interest_rates.csv")
 
     df_interest["change_date"] = pd.to_datetime(df_interest["Date Changed"], format="%d %b %y")
     df_interest = df_interest.rename(columns={"Rate": "rate"}).drop("Date Changed", axis=1)

@@ -144,7 +144,8 @@ def _(mo, pd):
     df_errors = df_model[df_model["year"] >= start_error_year]
 
     # Load the stats for the models
-    df_stats = pd.read_csv("public/linear_prediction_errors.csv.gz", compression="gzip", index_col="model_period")
+    _path = mo.notebook_location() / "public" / "linear_prediction_errors.csv.gz"
+    df_stats = pd.read_csv(str(_path), compression="gzip", index_col="model_period")
 
     return df_errors, df_stats
 

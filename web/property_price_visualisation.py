@@ -18,7 +18,7 @@ def _():
     import seaborn as sns
 
     palette = sns.color_palette("Set2")
-    return LinearRegression, mo, np, palette, pd, plt
+    return mo, np, palette, pd, plt
 
 
 @app.cell
@@ -72,6 +72,14 @@ def _(mo, palette, pd, plt):
     axs[0].spines['top'].set_visible(False)
     axs[0].spines['right'].set_visible(False)
 
+    axs[0].axvspan(2009, 2014, color="gray", alpha=0.2)
+    axs[1].axvspan(2009, 2014, color="gray", alpha=0.2)
+    axs[0].text(2011.5, 125, "Post-2008\nrecession", ha="center", va="center", color="red")
+
+    axs[0].axvspan(2020, 2023, color="gray", alpha=0.2)
+    axs[1].axvspan(2020, 2023, color="gray", alpha=0.2)
+    axs[0].text(2021.5, 125, "Covid-19", ha="center", va="center", color="red")
+
     # Plot sales count per year
     axs[1].bar(_df["year"], _df["sales_count"], color=palette[1])
     axs[1].set_title("Transactions Count per Year")
@@ -103,7 +111,7 @@ def _(mo):
     Since property prices have a near linear trend, the first modelling approach is to fit a linear regression (straight line) to the data.
     This line can then be extrapolated into the future to make a prediction.
 
-    A key decision in fitting a regression, is how many years data should I use to fit the regression. The example below shows how using either 3 years or 12 years of data to fit the regression results in different predictions.
+    A key decision in fitting a regression, is how many years data should I use to fit the regression. The example below shows how using either 4 years or 12 years of data to fit the regression results in different predictions.
     """)
     return
 
@@ -119,37 +127,34 @@ def _(mo, pd):
 
     df_errors = df_model[df_model["year"] >= start_error_year]
 
-    return df_errors, df_model, model_periods
+    # Load the stats for the models
+    df_stats = pd.read_csv("public/linear_prediction_errors.csv.gz", compression="gzip", index_col="model_period")
+
+    return df_errors, df_stats
 
 
 @app.cell
-def _(LinearRegression, df_errors, df_model, palette, plt):
-    model_idx_1 = 3
+def _(df_errors, mo, palette, pd, plt):
+    model_idx_1 = 4
     model_idx_2 = 12
 
     plt.figure(figsize=(10, 4))
     plt.plot(df_errors["year"], df_errors["avg_price"] / 1000, label="Average property price", linewidth=2.5, color=palette[0])
 
-    model_1 = LinearRegression()
-    train_start_year_1 = 2025 - model_idx_1
-    df_1 = df_model[df_model["year"] >= train_start_year_1]
-    train_years_1 = df_1["year"].values.reshape(-1, 1)
-    model_1.fit(train_years_1, df_1["avg_price"])
-    train_predictions_1 = model_1.predict(train_years_1)
-    prediction_2026_1 = model_1.predict([[2026]])
+    path_1 = mo.notebook_location() / "public/linear_model_4_years.csv.gz"
+    df_1 = pd.read_csv(str(path_1))
+    train_df_1 = df_1[df_1["train_prediction"].notna()]
+    test_df_1 = df_1[df_1["test_prediction"].notna()]
+    plt.plot(train_df_1["year"], train_df_1["train_prediction"]/1000, '--', linewidth=2, color=palette[1], label="Training Data (3 years)")
+    plt.plot(test_df_1["year"], test_df_1["test_prediction"]/1000, 'o', label=f"Prediction ({model_idx_1} years)", color=palette[1])
 
-    model_2 = LinearRegression()
-    train_start_year_2 = 2025 - model_idx_2
-    df_2 = df_model[df_model["year"] >= train_start_year_2]
-    train_years_2 = df_2["year"].values.reshape(-1, 1)
-    model_2.fit(train_years_2, df_2["avg_price"])
-    train_predictions_2 = model_2.predict(train_years_2)
-    prediction_2026_2 = model_2.predict([[2026]])
+    path_2 = mo.notebook_location() / "public/linear_model_12_years.csv.gz"
+    df_2 = pd.read_csv(str(path_2))
+    train_df_2 = df_2[df_2["train_prediction"].notna()]
+    test_df_2 = df_2[df_2["test_prediction"].notna()]
+    plt.plot(train_df_2["year"], train_df_2["train_prediction"]/1000, '--', linewidth=2, color=palette[2], label="Training Data (12 years)")
+    plt.plot(test_df_2["year"], test_df_2["test_prediction"]/1000, 'o', label=f"Prediction ({model_idx_2} years)", color=palette[2])
 
-    plt.plot(train_years_1, train_predictions_1/1000, '--', linewidth=2, color=palette[1], label="Training Data (3 years)")
-    plt.plot(2026, prediction_2026_1/1000, 'o', label=f"Prediction ({model_idx_1} years)", color=palette[1])
-    plt.plot(train_years_2, train_predictions_2/1000, '--', linewidth=2, color=palette[2], label="Training Data (12 years)")
-    plt.plot(2026, prediction_2026_2/1000, 'o', label=f"Prediction ({model_idx_2} years)", color=palette[2])
     plt.title('Comparing the number of years used to fit the model')
     plt.xlabel('Year')
     plt.ylabel('Price (£1k)')
@@ -187,7 +192,7 @@ def _(mo):
 
 
 @app.cell
-def _(df_errors, number_of_years_selector, palette, plt):
+def _(df_errors, df_stats, mo, number_of_years_selector, palette, plt):
     model_idx = number_of_years_selector.value
 
     plt.figure(figsize=(8, 3))
@@ -203,7 +208,15 @@ def _(df_errors, number_of_years_selector, palette, plt):
     plt.gca().spines['right'].set_visible(False)
     plt.xlim(2006.5, 2025.5)
     plt.xticks(range(2007, 2027, 2))
-    plt.gca()
+
+    error_description = mo.md(f"""
+    - Model horizon: {model_idx}
+    - MAE: {df_stats.loc[model_idx, "MAE"]:.2f}
+    - MSE: {df_stats.loc[model_idx, "MSE"]:.2f}
+    """)
+
+    mo.hstack([plt.gca(), error_description])
+
     return
 
 
@@ -216,22 +229,32 @@ def _(mo):
 
 
 @app.cell
-def _(df_errors, model_periods, np, plt):
-    mean_absolute_errors = {
-        model_period: (df_errors[f"prediction_{model_period}"] - df_errors["avg_price"]).abs().mean().item() 
-        for model_period in model_periods
-    }
+def _(df_stats, np, plt):
 
-    plt.figure(figsize=(8, 4))
-    plt.plot(mean_absolute_errors.keys(), mean_absolute_errors.values())
-    idx = np.argmin(list(mean_absolute_errors.values()))
-    plt.plot(model_periods[idx], list(mean_absolute_errors.values())[idx], 'ro', markersize=10)
-    plt.xlabel('Number of years used in regression')
-    plt.ylabel('Mean Absolute Error (MAE)')
-    plt.title('Error vs period used in regression')
-    plt.gca().spines['top'].set_visible(False)
-    plt.gca().spines['right'].set_visible(False)
-    plt.gca()
+    _fig, (_ax1, _ax2) = plt.subplots(1, 2, figsize=(12, 4))
+
+    # MAE Plot
+    _ax1.plot(df_stats.index, df_stats["MAE"])
+    idx_mae = np.argmin(list(df_stats["MAE"]))
+    _ax1.plot(df_stats.index[idx_mae], df_stats["MAE"].iloc[idx_mae], 'ro', markersize=10)
+    _ax1.set_xlabel('Number of years used in regression')
+    _ax1.set_ylabel('')
+    _ax1.set_title('Mean Absolute Error (MAE)')
+    _ax1.spines['top'].set_visible(False)
+    _ax1.spines['right'].set_visible(False)
+
+    # MSE Plot
+    _ax2.plot(df_stats.index, df_stats["MSE"])
+    idx_mse = np.argmin(list(df_stats["MSE"]))
+    _ax2.plot(df_stats.index[idx_mse], df_stats["MSE"].iloc[idx_mse], 'ro', markersize=10)
+    _ax2.set_xlabel('Number of years used in regression')
+    _ax2.set_ylabel('')
+    _ax2.set_title('Mean Squared Error (MSE)')
+    _ax2.spines['top'].set_visible(False)
+    _ax2.spines['right'].set_visible(False)
+
+    plt.tight_layout()
+    _fig
     return
 
 
@@ -246,28 +269,27 @@ def _(mo):
 
 
 @app.cell
-def _(LinearRegression, df_errors, df_model, palette, plt):
-    selected_prediction_horizon = 6
-    model = LinearRegression()
-    df_fit = df_model[df_model["year"] >= 2025 - selected_prediction_horizon]
-    train_years = df_fit["year"].values.reshape(-1, 1)
-    model.fit(train_years, df_fit["avg_price"])
-    train_predictions = model.predict(train_years)
-    prediction_2026 = model.predict([[2026]])
+def _(df_errors, mo, palette, pd, plt):
+    selected_prediction_horizon = 8
+    _path = mo.notebook_location() / "public/linear_model_8_years.csv.gz"
+    _df = pd.read_csv(str(_path), compression="gzip")
+
+    _train_df = _df[_df["train_prediction"].notna()]
+    _test_df = _df[_df["test_prediction"].notna()]
 
     plt.figure(figsize=(8, 3))
     plt.plot(df_errors["year"], df_errors["avg_price"] / 1000, label="Average prices", linewidth=2.5, color=palette[0])
-    plt.plot(train_years, train_predictions/1000, '--', linewidth=2, color=palette[2], label="Training Data")
-    plt.plot([2026], [prediction_2026/1000], 'o', markersize=10, label="2026 Prediction", color=palette[3])
+    plt.plot(_train_df["year"], _train_df["train_prediction"]/1000, '--', linewidth=2, color=palette[2], label="Training Data")
+    plt.plot(_test_df["year"], _test_df["test_prediction"]/1000, 'o', markersize=10, label="2026 Prediction", color=palette[3])
     plt.title('Historical prices with prediction for 2026')
     plt.xlabel('Year')
     plt.ylabel('Price (£1k)')
     plt.legend()
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
-    plt.xlim(2018, 2026.5)
+    plt.xlim(2017, 2026.5)
     plt.gca()
-    return (prediction_2026,)
+    return
 
 
 @app.cell

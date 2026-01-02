@@ -16,7 +16,7 @@ def _():
     import os
     if os.getcwd().endswith("property_prices/property_prices"):
         os.chdir("..")
-    return LinearRegression, duckdb, np, plt
+    return LinearRegression, duckdb, np, pd, plt
 
 
 @app.cell
@@ -51,6 +51,47 @@ def _(END_YEAR, LinearRegression, START_YEAR, df, model_periods):
 
     df.to_csv("web/public/model_predictions.csv", index=False)
     df.to_csv("web/public/model_predictions.csv.gz", index=False, compression="gzip")
+    return
+
+
+@app.cell
+def _(END_YEAR, df, model_periods, pd):
+    prediction_cols = [f"prediction_{mp}" for mp in model_periods]
+    df_errors = df[df["year"] > END_YEAR - max(model_periods)]
+    errors = df_errors[prediction_cols].sub(df_errors["avg_price"], axis=0)
+
+    linear_prediction_errors = pd.DataFrame({
+        "MAE": errors.abs().mean().values,
+        "MSE": errors.pow(2).mean().values
+    }, index=model_periods)
+    linear_prediction_errors.index.name = "model_period"
+
+    linear_prediction_errors.to_csv("web/public/linear_prediction_errors.csv")
+    linear_prediction_errors.to_csv("web/public/linear_prediction_errors.csv.gz", compression="gzip")
+
+    return
+
+
+@app.cell
+def _(END_YEAR, LinearRegression, df, pd):
+    # loop through model periods and make predictions and save them to csv files
+    for _model_period in [4, 8, 12]:
+        _start = END_YEAR - _model_period + 1
+        print(_model_period, _start, END_YEAR)
+    
+        _update_data = df[(df["year"] >= _start)][["year", "avg_price"]].copy()
+        _model = LinearRegression()
+        _model.fit(_update_data[["year"]].values, _update_data[["avg_price"]].values)
+        _train_predictions = _model.predict(_update_data[["year"]].values)
+        _update_data.loc[:, "train_prediction"] = _train_predictions
+
+        _prediction = _model.predict([[END_YEAR + 1]])
+        _mini_df = pd.DataFrame([{"year": END_YEAR + 1, "test_prediction": _prediction[0][0]}])
+        _update_data = pd.concat([_update_data, _mini_df], ignore_index=True)
+
+        file_name = f"web/public/linear_model_{_model_period}_years.csv"
+        _update_data.to_csv(file_name, index=False)
+        _update_data.to_csv(file_name + ".gz", index=False, compression="gzip")
     return
 
 

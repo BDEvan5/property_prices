@@ -190,7 +190,8 @@ def _(mo):
 @app.cell
 def _(df_transactions):
     transaction_summary = df_transactions["price_paid"].describe(percentiles=[0.5])
-    transaction_summary.to_csv("web/publictransaction_summary.csv")
+    transaction_summary.to_csv("web/public/transaction_summary.csv")
+    transaction_summary.to_csv("web/public/transaction_summary.csv.gz", compression="gzip")
     transaction_summary
     return
 
@@ -204,6 +205,7 @@ def _(df, pd):
     counts, bins = np.histogram(df['price_paid'].dropna(), bins=50, range=(0, max_value))
     df_distribution = pd.DataFrame({'bin_start': bins[:-1], 'count': counts})
     df_distribution.to_csv('web/public/price_distribution.csv', index=False)
+    df_distribution.to_csv('web/public/price_distribution.csv.gz', index=False, compression='gzip')
 
 
     plt.bar(bins[:-1], counts, width=np.diff(bins), align='edge')

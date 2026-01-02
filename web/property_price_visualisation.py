@@ -33,7 +33,7 @@ def _(mo):
 
 @app.cell
 def _(mo, np, pd, plt):
-    _df = pd.read_csv(str(mo.notebook_location()) + "/public/transaction_summary.csv", index_col=0)
+    _df = pd.read_csv(str(mo.notebook_location()) + "/public/transaction_summary.csv.gz", index_col=0)
 
 
     md_element = mo.md(f"""
@@ -43,8 +43,8 @@ def _(mo, np, pd, plt):
     - Price range (cheapest to most expensive): {int(_df.loc['min'].item())} to {int(_df.loc['max'].item())}
     """)
 
-    _path = mo.notebook_location() / "public/price_distribution.csv"
-    _df_distribution = pd.read_csv(str(_path))
+    _path = mo.notebook_location() / "public/price_distribution.csv.gz"
+    _df_distribution = pd.read_csv(str(_path), compression='gzip')
 
     bin_width = 1e6/50
     max_value = 1e6

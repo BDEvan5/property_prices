@@ -32,18 +32,34 @@ def _(mo):
 
 
 @app.cell
-def _(mo, pd):
+def _(mo, np, pd, plt):
     _df = pd.read_csv(str(mo.notebook_location()) + "/public/transaction_summary.csv", index_col=0)
 
 
-    mo.md(f"""
-    ## Database Statistics
-
+    md_element = mo.md(f"""
     - Number of transactions: {int(_df.loc['count'].item())}
     - Mean price (all transactions): {_df.loc['mean'].item():.2f} $\pm$ {_df.loc['std'].item():.2f}
     - Median price: {_df.loc['50%'].item():.2f}
     - Price range (cheapest to most expensive): {int(_df.loc['min'].item())} to {int(_df.loc['max'].item())}
     """)
+
+    _path = mo.notebook_location() / "public/price_distribution.csv"
+    _df_distribution = pd.read_csv(str(_path))
+
+    bin_width = 1e6/50
+    max_value = 1e6
+    _fig = plt.figure(figsize=(6, 3))
+    plt.bar(_df_distribution['bin_start'], _df_distribution['count'], width=bin_width, align='edge')
+    plt.title('Distribution of Transaction Prices')
+    plt.xlabel('Price Paid')
+    plt.ylabel('Number of Transactions')
+    xtick_marks = np.arange(0, max_value+1, 200000)
+    plt.xticks(xtick_marks, [f'{int(x/1000)}k' for x in xtick_marks])
+
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+
+    mo.vstack([mo.md("""## Database Statistics"""), mo.hstack([_fig, md_element])])
     return
 
 

@@ -195,5 +195,30 @@ def _(df_transactions):
     return
 
 
+@app.cell
+def _(df, pd):
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    max_value = 1e6
+    counts, bins = np.histogram(df['price_paid'].dropna(), bins=50, range=(0, max_value))
+    df_distribution = pd.DataFrame({'bin_start': bins[:-1], 'count': counts})
+    df_distribution.to_csv('web/public/price_distribution.csv', index=False)
+
+
+    plt.bar(bins[:-1], counts, width=np.diff(bins), align='edge')
+    plt.title('Distribution of Transaction Prices')
+    plt.xlabel('Price Paid')
+    plt.ylabel('Number of Transactions')
+    xtick_marks = np.arange(0, max_value+1, 200000)
+    plt.xticks(xtick_marks, [f'{int(x/1000)}k' for x in xtick_marks])
+
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.show()
+
+    return
+
+
 if __name__ == "__main__":
     app.run()

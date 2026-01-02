@@ -52,3 +52,6 @@ I need two tables to ingest the data:
 
 NOTE: in the future, I also need a method to handle property changes, i.e. plot to house
 
+# Development notes (personal reminders)
+
+- The files are saved with `gzip` because when the page is being served on GtiHub pages, `pandas` always tries to decompress the files, which raises an error if they are not compressed. Currently, I am not sure why this is the case.

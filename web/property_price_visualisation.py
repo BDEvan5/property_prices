@@ -12,21 +12,13 @@ def _():
     import matplotlib.pyplot as plt
     import duckdb
     import pandas as pd
+    import os
 
+    from sklearn.linear_model import LinearRegression
     import seaborn as sns
 
     palette = sns.color_palette("Set2")
-    return mo, np, palette, pd, plt
-
-
-@app.cell
-def _():
-    import os
-    if os.getcwd().endswith("web"):
-        os.chdir("..")
-
-    print(os.getcwd())
-    return
+    return LinearRegression, mo, np, palette, pd, plt
 
 
 @app.cell
@@ -56,14 +48,6 @@ def _(mo, pd):
 
 
 @app.cell
-def _(mo, pd):
-    _df = pd.read_csv(str(mo.notebook_location()) + "/public/transaction_summary.csv")
-    _df
-
-    return
-
-
-@app.cell
 def _(mo):
     mo.md("""
     ### Yearly aggregated data
@@ -76,7 +60,6 @@ def _(mo):
 @app.cell
 def _(mo, palette, pd, plt):
     data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv.gz"
-    print(str(data_path))
     _df = pd.read_csv(str(data_path), compression="gzip")
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 4))
@@ -126,18 +109,30 @@ def _(mo):
 
 
 @app.cell
-def _(LinearRegression, mo, palette, pd, plt, start_error_year):
+def _(mo, pd):
+    model_predictions_path = mo.notebook_location() / "public" / "model_predictions.csv.gz"
+
+    df_model = pd.read_csv(str(model_predictions_path), compression="gzip")
+    start_year = df_model["year"].min()
+    model_periods = [int(col.split("_")[-1]) for col in df_model.columns if "prediction" in col]
+    start_error_year = start_year + max(model_periods)
+
+    df_errors = df_model[df_model["year"] >= start_error_year]
+
+    return df_errors, df_model, model_periods
+
+
+@app.cell
+def _(LinearRegression, df_errors, df_model, palette, plt):
     model_idx_1 = 3
     model_idx_2 = 12
-    _df = pd.read_csv(str(mo.notebook_location()) + "/public/model_predictions.csv")
 
     plt.figure(figsize=(10, 4))
-    _df = _df[_df["year"] >= start_error_year]
-    plt.plot(_df["year"], _df["avg_price"] / 1000, label="Average property price", linewidth=2.5, color=palette[0])
+    plt.plot(df_errors["year"], df_errors["avg_price"] / 1000, label="Average property price", linewidth=2.5, color=palette[0])
 
     model_1 = LinearRegression()
     train_start_year_1 = 2025 - model_idx_1
-    df_1 = _df[_df["year"] >= train_start_year_1]
+    df_1 = df_model[df_model["year"] >= train_start_year_1]
     train_years_1 = df_1["year"].values.reshape(-1, 1)
     model_1.fit(train_years_1, df_1["avg_price"])
     train_predictions_1 = model_1.predict(train_years_1)
@@ -145,7 +140,7 @@ def _(LinearRegression, mo, palette, pd, plt, start_error_year):
 
     model_2 = LinearRegression()
     train_start_year_2 = 2025 - model_idx_2
-    df_2 = _df[_df["year"] >= train_start_year_2]
+    df_2 = df_model[df_model["year"] >= train_start_year_2]
     train_years_2 = df_2["year"].values.reshape(-1, 1)
     model_2.fit(train_years_2, df_2["avg_price"])
     train_predictions_2 = model_2.predict(train_years_2)
@@ -192,15 +187,13 @@ def _(mo):
 
 
 @app.cell
-def _(mo, number_of_years_selector, palette, pd, plt, start_error_year):
+def _(df_errors, number_of_years_selector, palette, plt):
     model_idx = number_of_years_selector.value
-    _df = pd.read_csv(str(mo.notebook_location()) + "/public/model_predictions.csv")
 
     plt.figure(figsize=(8, 3))
-    _df = _df[_df["year"] >= start_error_year]
-    plt.plot(_df["year"], _df["avg_price"] / 1000, label="Actual", linewidth=2.5, color=palette[0])
-    plt.plot(_df["year"], _df[f"prediction_{model_idx}"]/1000, label=f"Prediction ({model_idx} years)", color=palette[1])
-    plt.fill_between(_df["year"], _df["avg_price"] / 1000, _df[f"prediction_{model_idx}"]/1000, color='gray', alpha=0.2, label="Error region")
+    plt.plot(df_errors["year"], df_errors["avg_price"] / 1000, label="Actual", linewidth=2.5, color=palette[0])
+    plt.plot(df_errors["year"], df_errors[f"prediction_{model_idx}"]/1000, label=f"Prediction ({model_idx} years)", color=palette[1])
+    plt.fill_between(df_errors["year"], df_errors["avg_price"] / 1000, df_errors[f"prediction_{model_idx}"]/1000, color='gray', alpha=0.2, label="Error region")
 
     plt.title('Backtesting: Actual vs Predicted Average Property Prices')
     plt.xlabel('Year')
@@ -223,15 +216,9 @@ def _(mo):
 
 
 @app.cell
-def _(mo, np, pd, plt):
-    _df = pd.read_csv(str(mo.notebook_location()) + "/public/model_predictions.csv")
-
-    start_year = _df["year"].min()
-    model_periods = [int(col.split("_")[-1]) for col in _df.columns if "prediction" in col]
-    start_error_year = start_year + max(model_periods)
-    _df = _df[_df["year"] >= start_error_year]
+def _(df_errors, model_periods, np, plt):
     mean_absolute_errors = {
-        model_period: (_df[f"prediction_{model_period}"] - _df["avg_price"]).abs().mean().item() 
+        model_period: (df_errors[f"prediction_{model_period}"] - df_errors["avg_price"]).abs().mean().item() 
         for model_period in model_periods
     }
 
@@ -245,7 +232,7 @@ def _(mo, np, pd, plt):
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
     plt.gca()
-    return (start_error_year,)
+    return
 
 
 @app.cell
@@ -259,23 +246,17 @@ def _(mo):
 
 
 @app.cell
-def _(mo, palette, pd, plt, start_error_year):
-    from sklearn.linear_model import LinearRegression
-    selected_model_idx = 6
-    _df = pd.read_csv(str(mo.notebook_location()) + "/public/model_predictions.csv")
-
+def _(LinearRegression, df_errors, df_model, palette, plt):
+    selected_prediction_horizon = 6
     model = LinearRegression()
-    train_start_year = 2025 - selected_model_idx
-    df_fit = _df[_df["year"] >= train_start_year]
+    df_fit = df_model[df_model["year"] >= 2025 - selected_prediction_horizon]
     train_years = df_fit["year"].values.reshape(-1, 1)
     model.fit(train_years, df_fit["avg_price"])
     train_predictions = model.predict(train_years)
     prediction_2026 = model.predict([[2026]])
 
     plt.figure(figsize=(8, 3))
-    _df = _df[_df["year"] >= start_error_year]
-    plt.plot(_df["year"], _df["avg_price"] / 1000, label="Average prices", linewidth=2.5, color=palette[0])
-    # plt.plot(_df["year"], _df[f"prediction_{selected_model_idx}"]/1000, label=f"Prediction ({selected_model_idx} years)", color=palette[1])
+    plt.plot(df_errors["year"], df_errors["avg_price"] / 1000, label="Average prices", linewidth=2.5, color=palette[0])
     plt.plot(train_years, train_predictions/1000, '--', linewidth=2, color=palette[2], label="Training Data")
     plt.plot([2026], [prediction_2026/1000], 'o', markersize=10, label="2026 Prediction", color=palette[3])
     plt.title('Historical prices with prediction for 2026')
@@ -286,7 +267,7 @@ def _(mo, palette, pd, plt, start_error_year):
     plt.gca().spines['right'].set_visible(False)
     plt.xlim(2018, 2026.5)
     plt.gca()
-    return LinearRegression, prediction_2026
+    return (prediction_2026,)
 
 
 @app.cell

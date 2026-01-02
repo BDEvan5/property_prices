@@ -50,6 +50,7 @@ def _(END_YEAR, LinearRegression, START_YEAR, df, model_periods):
             df.loc[i + model_period, f"prediction_{model_period}"] = prediction
 
     df.to_csv("web/public/model_predictions.csv", index=False)
+    df.to_csv("web/public/model_predictions.csv.gz", index=False, compression="gzip")
     return
 
 

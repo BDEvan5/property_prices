@@ -74,29 +74,33 @@ def _(mo):
 
 
 @app.cell
-def _(pd):
-    _df = pd.read_csv("https://bdevan5.github.io/property_prices/public/avg_yearly_sales.csv")
-    _df
-    return
-
-
-@app.cell
 def _(mo, pd):
-    # Get the base directory/URL, then resolve the relative path properly
-    base_url = str(mo.notebook_location()).split("/", 3)[:3]
-    base_url = "/".join(base_url) + "/"
+    data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
+    print(str(data_path))
 
-    data_url = base_url + "public/avg_yearly_sales.csv"
-    print(data_url)  # Will print: https://bdevan5.github.io/property_prices/public/avg_yearly_sales.csv
-
-    _df = pd.read_csv(data_url)
+    with open(str(data_path), "r") as f:
+        _df = pd.read_csv(f)
     _df
+    return (data_path,)
+
+
+@app.cell
+def _():
+    from pyodide.http import open_url
+
+    url = "https://bdevan5.github.io/property_prices/public/avg_yearly_sales.csv"
+
+    # Fetch raw text
+    response = open_url(url)
+    csv_text = response.read()
+
+    print(csv_text)
     return
 
 
 @app.cell
-def _(mo, palette, pd, plt):
-    data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
+def _(data_path, palette, pd, plt):
+    # data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
     print(str(data_path))
     _df = pd.read_csv(str(data_path), compression=None, header=0, index_col=None)
 

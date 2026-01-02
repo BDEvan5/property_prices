@@ -31,13 +31,10 @@ def _():
 
 @app.cell
 def _(mo):
-    mo.md("""""")
-
     mo.md("""
     # Property Price Visualisation
 
     This introductory project analyses historical property price transaction data fro the TA11 post code region, and uses it to predict future pricing trends.
-
     """)
     return
 
@@ -59,6 +56,14 @@ def _(mo, pd):
 
 
 @app.cell
+def _(mo, pd):
+    _df = pd.read_csv(str(mo.notebook_location()) + "/public/transaction_summary.csv")
+    _df
+
+    return
+
+
+@app.cell
 def _(mo):
     mo.md("""
     ### Yearly aggregated data
@@ -72,7 +77,7 @@ def _(mo):
 def _(mo, palette, pd, plt):
     data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
     print(data_path)
-    _df = pd.read_csv(str(data_path), compression=None, header=0)
+    _df = pd.read_csv(str(data_path), compression=None, header=0, index_col=None)
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 4))
 

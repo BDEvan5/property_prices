@@ -83,6 +83,7 @@ def _(mo):
 def _(con):
     df = con.sql("SELECT * FROM year_avg_data").df()
     df.to_csv("web/public/avg_yearly_sales.csv", index=False)
+    df.to_csv("web/public/avg_yearly_sales.csv.gz", index=False, compression="gzip")
     print(df.shape)
     df.sample(5)
     return (df,)

@@ -74,35 +74,10 @@ def _(mo):
 
 
 @app.cell
-def _(mo, pd):
-    data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
+def _(mo, palette, pd, plt):
+    data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv.gz"
     print(str(data_path))
-
-    with open(str(data_path), "r") as f:
-        _df = pd.read_csv(f)
-    _df
-    return (data_path,)
-
-
-@app.cell
-def _():
-    from pyodide.http import open_url
-
-    url = "https://bdevan5.github.io/property_prices/public/avg_yearly_sales.csv"
-
-    # Fetch raw text
-    response = open_url(url)
-    csv_text = response.read()
-
-    print(csv_text)
-    return
-
-
-@app.cell
-def _(data_path, palette, pd, plt):
-    # data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
-    print(str(data_path))
-    _df = pd.read_csv(str(data_path), compression=None, header=0, index_col=None)
+    _df = pd.read_csv(str(data_path), compression="gzip")
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 4))
 

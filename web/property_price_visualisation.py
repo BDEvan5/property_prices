@@ -22,7 +22,7 @@ def _():
 @app.cell
 def _():
     import os
-    if os.getcwd().endswith("web") or os.getcwd().endswith("output_dir"):
+    if os.getcwd().endswith("web"):
         os.chdir("..")
 
     print(os.getcwd())
@@ -43,22 +43,13 @@ def _(mo):
 
 
 @app.cell
-def _(mo):
-    mo.md(r"""
-    ## Database statistics
-    """)
-    return
-
-
-@app.cell
 def _(mo, pd):
-    mo.md("""## Database Statistics""")
-
     _df = pd.read_csv(str(mo.notebook_location()) + "/public/transaction_summary.csv", index_col=0)
 
-    mo.md("""## Database Statistics""")
 
     mo.md(f"""
+    ## Database Statistics
+
      - Number of transactions: {int(_df.loc['count'].item())}
      - Mean price (all transactions): {_df.loc['mean'].item():.2f} $\pm$ {_df.loc['std'].item():.2f}
      - Median price: {_df.loc['50%'].item():.2f}
@@ -79,8 +70,8 @@ def _(mo):
 
 @app.cell
 def _(mo, palette, pd, plt):
-
-    _df = pd.read_csv(str(mo.notebook_location()) + "/public/avg_yearly_sales.csv")
+    data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
+    _df = pd.read_csv(str(data_path))
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 4))
 

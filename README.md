@@ -1,57 +1,33 @@
-# property_prices
-Modeling property prices in the UK
+# Property Price Modeling
+
+>**🎯 Aim:** 
+> Accurately model (and predict) property transactions in the UK. For example, given a properties address and previous transactions, how accurately can I predict future transactions?
+
+## 🧰 Code 
+- `extract_transform_load.py` Extract, transform and load transaction data from HM land registry into a SQL database (using DuckDB).
+- `aggregate_data.py` Aggregate the dataset to find yearly averages 
+- `linear_regression.py` Linear regression model to predict average property prices in the future
 
 
-# Project Notes
+## 💪 Upcoming tasks
 
-## Overview
 
-The development pipeline for all three of the required sections will be the same. Start out by getting them to run locally on my laptop and then later on move them to a server where they run in real time.
+1. **Expand the dataset:** to use all data in the price paid dataset
+2. **Predict individual property transactions:** Apply the model that can predict averages to predict individual transactions, i.e. given 2 previous transactions on a property predict the next transaction price (at varying time horizons)
+3. **Improve the model:** Explore more complex models to improve the predictions
+4. **Automate data collection:** Deploy the database to a server and automate monthly updates (20th of the month). Make daily predictions at 1 month and 1 year ahead.
+5. **Expand information sources:** Use other sources, such as interest rate, Google maps data, or news stories to improve predictions
+6. **Expand the website:** Improve database analysis and display automated predictions.
 
-### Data handling (probably this repo)
-- Collect the data (and updates) from HM land registry
-- Preprocess the data and store in the database (.vortex files)
-- Process data into outputs that will be displayed on the website, i.e. avg price per year
 
-**Future automation:**
-Automatically run update jobs to collect new data daily.
+#📝 Notes on the project
 
-### Website
-Static website that displays data stored in the git repo.
-- Show historical price data & volume of house sold
-- Specifically show plots where the same property has sold later and record that increase
+## 💾 Dataset
 
-**Future automation:**
-- Upgrade to a full website that queries the database for real-time info
-NOTE: unless the data is changing frequently, it might be more worth while to just run a job to update the website data each night and then I can sick with a static website.
+The dataset comes from the [HM land registry](https://landregistry.data.gov.uk/). 
+The full dataset (~ 4.5Gb) and previous months data (~20Mb) is available for download [here](https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads).
 
-### Modelling repo
 
-This will start as an offline system, that could be moved online later on.
-The role will be to use the processed data from the data handling to make predictions that are stored as part of the website data to be displayed.
+## 📝 Development notes (personal reminders)
 
-**Future automation:**
-
-Run daily updated predictions 
-
-## MVP
-
-- Add the TA11 database and export data required for the website
-- Make a website showing plots:
-    - Price trend & volume over time
-    - Houses that have sold multiple times 
-    - Busiest months for house sales
-- Make a simple model (think linear regression) that makes a prediction for 1 month from now
-- Add the prediction to the website with a model description
-
-## Notes
-
-I need two tables to ingest the data:
-- Property table that records each unique property with address information
-- Transactions table that records the transactions for each property
-
-NOTE: in the future, I also need a method to handle property changes, i.e. plot to house
-
-# Development notes (personal reminders)
-
-- The files are saved with `gzip` because when the page is being served on GtiHub pages, `pandas` always tries to decompress the files, which raises an error if they are not compressed. Currently, I am not sure why this is the case.
+The files are saved with `gzip` because when the page is being served on GtiHub pages, `pandas` always tries to decompress the files, which raises an error if they are not compressed. Currently, I am not sure why this is the case.

@@ -142,7 +142,7 @@ def _(pd):
 
 @app.cell
 def _(df, df_interest, pd, plt):
-    _fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(12, 10))
+    _fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(12, 8))
 
     df["date"] = pd.to_datetime(df["year"].astype(str) + '-01-01')
 

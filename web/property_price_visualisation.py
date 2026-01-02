@@ -72,7 +72,7 @@ def _(mo):
 def _(mo, palette, pd, plt):
     data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
     print(data_path)
-    _df = pd.read_csv(str(data_path), compression=None)
+    _df = pd.read_csv(str(data_path), compression=None, header=0)
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 4))
 

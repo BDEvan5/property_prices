@@ -12,7 +12,7 @@
 ## 💪 Upcoming tasks
 
 
-1. **Expand the dataset:** to use all data in the price paid dataset
+1. **Expand the dataset:** to use all data in the price paid dataset. This includes expanding the analysis on different regions and time-based trends. Additionally, I can increase the prediction frequency since there are now a lot more transactions.
 2. **Predict individual property transactions:** Apply the model that can predict averages to predict individual transactions, i.e. given 2 previous transactions on a property predict the next transaction price (at varying time horizons)
 3. **Improve the model:** Explore more complex models to improve the predictions
 4. **Automate data collection:** Deploy the database to a server and automate monthly updates (20th of the month). Make daily predictions at 1 month and 1 year ahead.
@@ -20,7 +20,7 @@
 6. **Expand the website:** Improve database analysis and display automated predictions.
 
 
-#📝 Notes on the project
+# 📝 Notes on the project
 
 ## 💾 Dataset
 

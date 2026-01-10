@@ -6,13 +6,11 @@ app = marimo.App()
 
 @app.cell
 def _():
-    import numpy as np
-
-    import matplotlib.pyplot as plt
-    import duckdb
-    import pandas as pd
-
     import os
+
+    import duckdb
+    import matplotlib.pyplot as plt
+    import pandas as pd
 
     if os.getcwd().endswith("property_prices/property_prices"):
         os.chdir("..")

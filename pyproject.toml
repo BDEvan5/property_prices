@@ -35,4 +35,7 @@ select = [
     "C4", # flake8-comprehensions
     "A", # flake8-builtins
 ]
-ignore = ["PGH003", "PGH004"]
+ignore = ["PGH003", "PGH004", "E501"]
+
+[tool.ruff.lint.pycodestyle]
+ignore-overlong-task-comments = true

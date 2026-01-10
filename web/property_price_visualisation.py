@@ -6,15 +6,10 @@ app = marimo.App()
 
 @app.cell
 def _():
-    import numpy as np
     import marimo as mo
-
     import matplotlib.pyplot as plt
-    import duckdb
+    import numpy as np
     import pandas as pd
-    import os
-
-    from sklearn.linear_model import LinearRegression
     import seaborn as sns
 
     palette = sns.color_palette("Set2")
@@ -113,7 +108,7 @@ def _(mo, palette, pd, plt):
     axs[1].spines["right"].set_visible(False)
 
     plt.tight_layout()
-    fig
+    fig  # noqa: B018
     return
 
 
@@ -337,7 +332,7 @@ def _(df_stats, np, plt):
     _ax2.spines["right"].set_visible(False)
 
     plt.tight_layout()
-    _fig
+    _fig  # noqa: B018
     return
 
 
@@ -353,7 +348,6 @@ def _(mo):
 
 @app.cell
 def _(df_errors, mo, palette, pd, plt):
-    selected_prediction_horizon = 8
     _path = mo.notebook_location() / "public/linear_model_8_years.csv.gz"
     _df = pd.read_csv(str(_path), compression="gzip")
 

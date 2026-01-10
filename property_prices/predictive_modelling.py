@@ -6,14 +6,13 @@ app = marimo.App()
 
 @app.cell
 def _():
-    from sklearn.linear_model import LinearRegression
-    import numpy as np
-
-    import matplotlib.pyplot as plt
-    import duckdb
-    import pandas as pd
-
     import os
+
+    import duckdb
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import pandas as pd
+    from sklearn.linear_model import LinearRegression
 
     if os.getcwd().endswith("property_prices/property_prices"):
         os.chdir("..")
@@ -126,7 +125,7 @@ def _(START_YEAR, df, model_periods, np, plt):
 
 @app.cell
 def _(df):
-    df
+    df  # noqa: B018
     return
 
 

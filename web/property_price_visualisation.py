@@ -33,31 +33,37 @@ def _(mo):
 
 @app.cell
 def _(mo, np, pd, plt):
-    _df = pd.read_csv(str(mo.notebook_location()) + "/public/transaction_summary.csv.gz", index_col=0)
-
+    _df = pd.read_csv(
+        str(mo.notebook_location()) + "/public/transaction_summary.csv.gz", index_col=0
+    )
 
     md_element = mo.md(f"""
-    - Number of transactions: {int(_df.loc['count'].item())}
-    - Mean price (all transactions): {_df.loc['mean'].item():.2f} $\pm$ {_df.loc['std'].item():.2f}
-    - Median price: {_df.loc['50%'].item():.2f}
-    - Price range (cheapest to most expensive): {int(_df.loc['min'].item())} to {int(_df.loc['max'].item())}
+    - Number of transactions: {int(_df.loc["count"].item())}
+    - Mean price (all transactions): {_df.loc["mean"].item():.2f} $\pm$ {_df.loc["std"].item():.2f}
+    - Median price: {_df.loc["50%"].item():.2f}
+    - Price range (cheapest to most expensive): {int(_df.loc["min"].item())} to {int(_df.loc["max"].item())}
     """)
 
     _path = mo.notebook_location() / "public/price_distribution.csv.gz"
-    _df_distribution = pd.read_csv(str(_path), compression='gzip')
+    _df_distribution = pd.read_csv(str(_path), compression="gzip")
 
-    bin_width = 1e6/50
+    bin_width = 1e6 / 50
     max_value = 1e6
     _fig = plt.figure(figsize=(6, 3))
-    plt.bar(_df_distribution['bin_start'], _df_distribution['count'], width=bin_width, align='edge')
-    plt.title('Distribution of Transaction Prices')
-    plt.xlabel('Price Paid')
-    plt.ylabel('Number of Transactions')
-    xtick_marks = np.arange(0, max_value+1, 200000)
-    plt.xticks(xtick_marks, [f'{int(x/1000)}k' for x in xtick_marks])
+    plt.bar(
+        _df_distribution["bin_start"],
+        _df_distribution["count"],
+        width=bin_width,
+        align="edge",
+    )
+    plt.title("Distribution of Transaction Prices")
+    plt.xlabel("Price Paid")
+    plt.ylabel("Number of Transactions")
+    xtick_marks = np.arange(0, max_value + 1, 200000)
+    plt.xticks(xtick_marks, [f"{int(x / 1000)}k" for x in xtick_marks])
 
-    plt.gca().spines['top'].set_visible(False)
-    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines["top"].set_visible(False)
+    plt.gca().spines["right"].set_visible(False)
 
     mo.vstack([mo.md("""## Database Statistics"""), mo.hstack([_fig, md_element])])
     return
@@ -85,12 +91,14 @@ def _(mo, palette, pd, plt):
     axs[0].set_title("Average Price per Year (£1k)")
     axs[0].set_xlabel("Year")
     axs[0].grid(True)
-    axs[0].spines['top'].set_visible(False)
-    axs[0].spines['right'].set_visible(False)
+    axs[0].spines["top"].set_visible(False)
+    axs[0].spines["right"].set_visible(False)
 
     axs[0].axvspan(2009, 2014, color="gray", alpha=0.2)
     axs[1].axvspan(2009, 2014, color="gray", alpha=0.2)
-    axs[0].text(2011.5, 125, "Post-2008\nrecession", ha="center", va="center", color="red")
+    axs[0].text(
+        2011.5, 125, "Post-2008\nrecession", ha="center", va="center", color="red"
+    )
 
     axs[0].axvspan(2020, 2023, color="gray", alpha=0.2)
     axs[1].axvspan(2020, 2023, color="gray", alpha=0.2)
@@ -101,11 +109,11 @@ def _(mo, palette, pd, plt):
     axs[1].set_title("Transactions Count per Year")
     axs[1].set_xlabel("Year")
     axs[1].grid(axis="y")
-    axs[1].spines['top'].set_visible(False)
-    axs[1].spines['right'].set_visible(False)
+    axs[1].spines["top"].set_visible(False)
+    axs[1].spines["right"].set_visible(False)
 
     plt.tight_layout()
-    fig 
+    fig
     return
 
 
@@ -134,11 +142,15 @@ def _(mo):
 
 @app.cell
 def _(mo, pd):
-    model_predictions_path = mo.notebook_location() / "public" / "model_predictions.csv.gz"
+    model_predictions_path = (
+        mo.notebook_location() / "public" / "model_predictions.csv.gz"
+    )
 
     df_model = pd.read_csv(str(model_predictions_path), compression="gzip")
     start_year = df_model["year"].min()
-    model_periods = [int(col.split("_")[-1]) for col in df_model.columns if "prediction" in col]
+    model_periods = [
+        int(col.split("_")[-1]) for col in df_model.columns if "prediction" in col
+    ]
     start_error_year = start_year + max(model_periods)
 
     df_errors = df_model[df_model["year"] >= start_error_year]
@@ -156,28 +168,60 @@ def _(df_errors, mo, palette, pd, plt):
     model_idx_2 = 12
 
     plt.figure(figsize=(10, 4))
-    plt.plot(df_errors["year"], df_errors["avg_price"] / 1000, label="Average property price", linewidth=2.5, color=palette[0])
+    plt.plot(
+        df_errors["year"],
+        df_errors["avg_price"] / 1000,
+        label="Average property price",
+        linewidth=2.5,
+        color=palette[0],
+    )
 
     path_1 = mo.notebook_location() / "public/linear_model_4_years.csv.gz"
     df_1 = pd.read_csv(str(path_1))
     train_df_1 = df_1[df_1["train_prediction"].notna()]
     test_df_1 = df_1[df_1["test_prediction"].notna()]
-    plt.plot(train_df_1["year"], train_df_1["train_prediction"]/1000, '--', linewidth=2, color=palette[1], label="Training Data (3 years)")
-    plt.plot(test_df_1["year"], test_df_1["test_prediction"]/1000, 'o', label=f"Prediction ({model_idx_1} years)", color=palette[1])
+    plt.plot(
+        train_df_1["year"],
+        train_df_1["train_prediction"] / 1000,
+        "--",
+        linewidth=2,
+        color=palette[1],
+        label="Training Data (3 years)",
+    )
+    plt.plot(
+        test_df_1["year"],
+        test_df_1["test_prediction"] / 1000,
+        "o",
+        label=f"Prediction ({model_idx_1} years)",
+        color=palette[1],
+    )
 
     path_2 = mo.notebook_location() / "public/linear_model_12_years.csv.gz"
     df_2 = pd.read_csv(str(path_2))
     train_df_2 = df_2[df_2["train_prediction"].notna()]
     test_df_2 = df_2[df_2["test_prediction"].notna()]
-    plt.plot(train_df_2["year"], train_df_2["train_prediction"]/1000, '--', linewidth=2, color=palette[2], label="Training Data (12 years)")
-    plt.plot(test_df_2["year"], test_df_2["test_prediction"]/1000, 'o', label=f"Prediction ({model_idx_2} years)", color=palette[2])
+    plt.plot(
+        train_df_2["year"],
+        train_df_2["train_prediction"] / 1000,
+        "--",
+        linewidth=2,
+        color=palette[2],
+        label="Training Data (12 years)",
+    )
+    plt.plot(
+        test_df_2["year"],
+        test_df_2["test_prediction"] / 1000,
+        "o",
+        label=f"Prediction ({model_idx_2} years)",
+        color=palette[2],
+    )
 
-    plt.title('Comparing the number of years used to fit the model')
-    plt.xlabel('Year')
-    plt.ylabel('Price (£1k)')
+    plt.title("Comparing the number of years used to fit the model")
+    plt.xlabel("Year")
+    plt.ylabel("Price (£1k)")
     plt.legend(frameon=False)
-    plt.gca().spines['top'].set_visible(False)
-    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines["top"].set_visible(False)
+    plt.gca().spines["right"].set_visible(False)
     plt.xlim(2012, 2026.5)
 
     plt.gca()
@@ -194,8 +238,9 @@ def _(mo):
 
 @app.cell
 def _(mo):
-
-    number_of_years_selector = mo.ui.slider(start=3, stop=12, label="Number of years to use to fit model", show_value=True)
+    number_of_years_selector = mo.ui.slider(
+        start=3, stop=12, label="Number of years to use to fit model", show_value=True
+    )
     mo.md(f"""
     ### Backtesting
 
@@ -213,16 +258,34 @@ def _(df_errors, df_stats, mo, number_of_years_selector, palette, plt):
     model_idx = number_of_years_selector.value
 
     plt.figure(figsize=(8, 3))
-    plt.plot(df_errors["year"], df_errors["avg_price"] / 1000, label="Actual", linewidth=2.5, color=palette[0])
-    plt.plot(df_errors["year"], df_errors[f"prediction_{model_idx}"]/1000, label=f"Prediction ({model_idx} years)", color=palette[1])
-    plt.fill_between(df_errors["year"], df_errors["avg_price"] / 1000, df_errors[f"prediction_{model_idx}"]/1000, color='gray', alpha=0.2, label="Error region")
+    plt.plot(
+        df_errors["year"],
+        df_errors["avg_price"] / 1000,
+        label="Actual",
+        linewidth=2.5,
+        color=palette[0],
+    )
+    plt.plot(
+        df_errors["year"],
+        df_errors[f"prediction_{model_idx}"] / 1000,
+        label=f"Prediction ({model_idx} years)",
+        color=palette[1],
+    )
+    plt.fill_between(
+        df_errors["year"],
+        df_errors["avg_price"] / 1000,
+        df_errors[f"prediction_{model_idx}"] / 1000,
+        color="gray",
+        alpha=0.2,
+        label="Error region",
+    )
 
-    plt.title('Backtesting: Actual vs Predicted Average Property Prices')
-    plt.xlabel('Year')
-    plt.ylabel('Price (£1k)')
+    plt.title("Backtesting: Actual vs Predicted Average Property Prices")
+    plt.xlabel("Year")
+    plt.ylabel("Price (£1k)")
     plt.legend(frameon=False)
-    plt.gca().spines['top'].set_visible(False)
-    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines["top"].set_visible(False)
+    plt.gca().spines["right"].set_visible(False)
     plt.xlim(2006.5, 2025.5)
     plt.xticks(range(2007, 2027, 2))
 
@@ -247,28 +310,31 @@ def _(mo):
 
 @app.cell
 def _(df_stats, np, plt):
-
     _fig, (_ax1, _ax2) = plt.subplots(1, 2, figsize=(12, 4))
 
     # MAE Plot
     _ax1.plot(df_stats.index, df_stats["MAE"])
     idx_mae = np.argmin(list(df_stats["MAE"]))
-    _ax1.plot(df_stats.index[idx_mae], df_stats["MAE"].iloc[idx_mae], 'ro', markersize=10)
-    _ax1.set_xlabel('Number of years used in regression')
-    _ax1.set_ylabel('')
-    _ax1.set_title('Mean Absolute Error (MAE)')
-    _ax1.spines['top'].set_visible(False)
-    _ax1.spines['right'].set_visible(False)
+    _ax1.plot(
+        df_stats.index[idx_mae], df_stats["MAE"].iloc[idx_mae], "ro", markersize=10
+    )
+    _ax1.set_xlabel("Number of years used in regression")
+    _ax1.set_ylabel("")
+    _ax1.set_title("Mean Absolute Error (MAE)")
+    _ax1.spines["top"].set_visible(False)
+    _ax1.spines["right"].set_visible(False)
 
     # MSE Plot
     _ax2.plot(df_stats.index, df_stats["MSE"])
     idx_mse = np.argmin(list(df_stats["MSE"]))
-    _ax2.plot(df_stats.index[idx_mse], df_stats["MSE"].iloc[idx_mse], 'ro', markersize=10)
-    _ax2.set_xlabel('Number of years used in regression')
-    _ax2.set_ylabel('')
-    _ax2.set_title('Mean Squared Error (MSE)')
-    _ax2.spines['top'].set_visible(False)
-    _ax2.spines['right'].set_visible(False)
+    _ax2.plot(
+        df_stats.index[idx_mse], df_stats["MSE"].iloc[idx_mse], "ro", markersize=10
+    )
+    _ax2.set_xlabel("Number of years used in regression")
+    _ax2.set_ylabel("")
+    _ax2.set_title("Mean Squared Error (MSE)")
+    _ax2.spines["top"].set_visible(False)
+    _ax2.spines["right"].set_visible(False)
 
     plt.tight_layout()
     _fig
@@ -295,15 +361,35 @@ def _(df_errors, mo, palette, pd, plt):
     _test_df = _df[_df["test_prediction"].notna()]
 
     plt.figure(figsize=(8, 3))
-    plt.plot(df_errors["year"], df_errors["avg_price"] / 1000, label="Average prices", linewidth=2.5, color=palette[0])
-    plt.plot(_train_df["year"], _train_df["train_prediction"]/1000, '--', linewidth=2, color=palette[2], label="Training Data")
-    plt.plot(_test_df["year"], _test_df["test_prediction"]/1000, 'o', markersize=10, label="2026 Prediction", color=palette[3])
-    plt.title('Historical prices with prediction for 2026')
-    plt.xlabel('Year')
-    plt.ylabel('Price (£1k)')
+    plt.plot(
+        df_errors["year"],
+        df_errors["avg_price"] / 1000,
+        label="Average prices",
+        linewidth=2.5,
+        color=palette[0],
+    )
+    plt.plot(
+        _train_df["year"],
+        _train_df["train_prediction"] / 1000,
+        "--",
+        linewidth=2,
+        color=palette[2],
+        label="Training Data",
+    )
+    plt.plot(
+        _test_df["year"],
+        _test_df["test_prediction"] / 1000,
+        "o",
+        markersize=10,
+        label="2026 Prediction",
+        color=palette[3],
+    )
+    plt.title("Historical prices with prediction for 2026")
+    plt.xlabel("Year")
+    plt.ylabel("Price (£1k)")
     plt.legend()
-    plt.gca().spines['top'].set_visible(False)
-    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines["top"].set_visible(False)
+    plt.gca().spines["right"].set_visible(False)
     plt.xlim(2017, 2026.5)
     plt.gca()
     return

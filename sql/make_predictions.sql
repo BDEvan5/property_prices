@@ -1,4 +1,11 @@
-CREATE OR REPLACE TABLE predictions AS (
+CREATE OR REPLACE TABLE predictions (
+    property_id UUID,
+    year INT,
+    predicted_price FLOAT,
+    FOREIGN KEY (property_id) REFERENCES properties(property_id)
+);
+
+INSERT INTO predictions (
     SELECT 
         pa.property_id,
         nya.year,

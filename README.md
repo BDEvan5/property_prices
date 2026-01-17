@@ -3,21 +3,27 @@
 >**🎯 Aim:** 
 > Accurately model (and predict) property transactions in the UK. For example, given a properties address and previous transactions, how accurately can I predict future transactions?
 
+Demo: a current (work-in-progress) demo is available at: https://bdevan5.github.io/property_prices/
+
 ## 🧰 Code 
-- `extract_transform_load.py` Extract, transform and load transaction data from HM land registry into a SQL database (using DuckDB).
-- `aggregate_data.py` Aggregate the dataset to find yearly averages 
-- `linear_regression.py` Linear regression model to predict average property prices in the future
+
+**SQL files for data processing:**
+- `load_data.sql` Extract and load transaction data from HM land registry into a SQL database (using DuckDB).
+- `transform.sql` Transform the raw data to extract property and transaction tables
+- `aggregate_yearly_data.sql` Aggregate the dataset to find yearly averages for each postcode, region and district
+- `house_price_index.sql` Calculate the house price index (HPI) of filtered transactions
+- `hpi_predictions.sql` Make predictions for each property using the HPI
+- `calculate_accuracy.sql` Calculate the accuracy of the HPI predictions
 
 
 ## 💪 Upcoming tasks
 
 
-1. **Expand the dataset:** to use all data in the price paid dataset. This includes expanding the analysis on different regions and time-based trends. Additionally, I can increase the prediction frequency since there are now a lot more transactions.
-2. **Predict individual property transactions:** Apply the model that can predict averages to predict individual transactions, i.e. given 2 previous transactions on a property predict the next transaction price (at varying time horizons)
-3. **Improve the model:** Explore more complex models to improve the predictions
-4. **Automate data collection:** Deploy the database to a server and automate monthly updates (20th of the month). Make daily predictions at 1 month and 1 year ahead.
-5. **Expand information sources:** Use other sources, such as interest rate, Google maps data, or news stories to improve predictions
-6. **Expand the website:** Improve database analysis and display automated predictions.
+1. **Predict individual property transactions:** Apply the model that can predict averages to predict individual transactions, i.e. given 2 previous transactions on a property predict the next transaction price (at varying time horizons)
+2. **Improve the model:** Explore more complex models to improve the predictions
+3. **Automate data collection:** Deploy the database to a server and automate monthly updates (20th of the month). Make daily predictions at 1 month and 1 year ahead.
+4. **Expand information sources:** Use other sources, such as interest rate, Google maps data, or news stories to improve predictions
+5. **Expand the website:** Improve database analysis and display automated predictions.
 
 
 # 📝 Notes on the project

@@ -4,7 +4,9 @@ CREATE OR REPLACE TABLE national_year_avg AS (
         year(deed_date) as year,
         AVG(price_paid) as mean_price,
         STDDEV_SAMP(price_paid) as std_price,
-        COUNT(*) as volume
+        COUNT(*) as volume,
+        PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY price_paid) AS percentile_99,
+        COUNT(DISTINCT property_id) as num_properties
     FROM transactions_view
     GROUP BY year
     ORDER BY year

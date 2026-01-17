@@ -9,7 +9,7 @@ CREATE OR REPLACE VIEW hpi_transaction_analysis AS (
         (t.price_paid - n.mean_price) / n.std_price AS z_score,
         t.price_paid / n.mean_price AS proportion_of_mean
     from transactions t JOIN hpi_national_year_avg n
-        ON year(t.deed_date) = n.year
+        ON year(t.deed_date) - 1 = n.year
 );
 
 
@@ -42,6 +42,8 @@ INSERT INTO hpi_predictions (
         -- (nya.mean_price + (pa.z_score_mean * nya.std_price)) as predicted_price
     FROM hpi_property_analysis pa
     JOIN hpi_national_year_avg nya 
-        ON nya.year >= year(pa.first_transaction_date)
+        ON nya.year > year(pa.first_transaction_date)
     ORDER BY pa.property_id, nya.year
 );
+
+    

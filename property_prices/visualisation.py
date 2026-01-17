@@ -89,7 +89,6 @@ def _(duckdb):
     df = _con.sql(f"SELECT * from transactions where year(deed_date) = {year}").df()
     _con.close()
     df.head()
-
     return (df,)
 
 
@@ -123,7 +122,6 @@ def _(df, np, plt):
     plt.ylabel("Frequency")
     plt.legend()
     plt.show()
-
     return
 
 

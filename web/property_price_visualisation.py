@@ -164,6 +164,8 @@ def _(mo):
     The accuracy of the method is measured by using the transaction data and calculating the difference between the estimated price and the actual transaction price.
     The percentage error which is calculated by dividing the absolute difference by the actual transaction price.
     The mean absolute error each year and mean absolute percentage error are plotted below.
+
+    NOTE: the transactions are filtered to remove houses above £1M and below £10,000 since these transactions are outliers and a more complex model is required to predict their prices.
     """)
     return
 
@@ -177,13 +179,13 @@ def _(mo, palette, pd, plt):
 
     ax.plot(
         hpi_accuracy["year"],
-        hpi_accuracy["mean_absolute_error"],
+        hpi_accuracy["mean_error_percentage"] * 100,
         color=palette[0],
         linewidth=2,
     )
-    ax.set_title("HPI Mean Absolute Error")
+    ax.set_title("HPI Mean Error Percentage")
     ax.set_xlabel("Year")
-    ax.set_ylabel("Mean Absolute Error")
+    ax.set_ylabel("Mean Error Percentage (%)")
     ax.grid(axis="y")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)

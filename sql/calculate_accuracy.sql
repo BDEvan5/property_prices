@@ -19,7 +19,7 @@ CREATE OR REPLACE TABLE hpi_accuracy AS (
         avg(abs(error_percentage)) AS mean_error_percentage,
         count(*) AS transaction_count
     FROM hpi_transaction_predictions
-    WHERE price_paid < 1000000
+    WHERE price_paid < 1000000 and price_paid > 10000
     GROUP BY 1
 );
 

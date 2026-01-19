@@ -10,9 +10,8 @@ def _():
     import matplotlib.pyplot as plt
     import numpy as np
     import pandas as pd
-    import seaborn as sns
 
-    palette = sns.color_palette("Set2")
+    palette = plt.get_cmap("Set2").colors
     return mo, np, palette, pd, plt
 
 

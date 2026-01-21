@@ -28,7 +28,7 @@ def _(mo):
 @app.cell
 def _(mo, np, pd, plt):
     _df = pd.read_csv(
-        str(mo.notebook_location()) + "/public/transaction_summary.csv.gz",
+        str(mo.notebook_location()) + "/public/transaction_summary.csv",
         index_col=0,
         header=None,
     )
@@ -39,8 +39,8 @@ def _(mo, np, pd, plt):
     - Mean price (all transactions): {_df.loc["mean_price"].item():.2f} $\pm$ {_df.loc["std_price"].item():.2f}
     """)
 
-    _path = mo.notebook_location() / "public/price_distribution.csv.gz"
-    _df_distribution = pd.read_csv(str(_path), compression="gzip")
+    _path = mo.notebook_location() / "public/price_distribution.csv"
+    _df_distribution = pd.read_csv(str(_path))
 
     bin_width = _df_distribution["bin_end"] - _df_distribution["bin_start"]
     max_value = _df_distribution["bin_end"].max()
@@ -81,10 +81,10 @@ def _(mo):
 
 @app.cell
 def _(mo, palette, pd, plt):
-    data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv.gz"
-    _df = pd.read_csv(str(data_path), compression="gzip")
-    hpi_data_path = mo.notebook_location() / "public" / "hpi_avg_yearly_sales.csv.gz"
-    _df_hpi = pd.read_csv(str(hpi_data_path), compression="gzip")
+    data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
+    _df = pd.read_csv(str(data_path))
+    hpi_data_path = mo.notebook_location() / "public" / "hpi_avg_yearly_sales.csv"
+    _df_hpi = pd.read_csv(str(hpi_data_path))
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 4))
 
@@ -172,8 +172,8 @@ def _(mo):
 
 @app.cell
 def _(mo, palette, pd, plt):
-    data_path_accuracy = mo.notebook_location() / "public" / "hpi_accuracy.csv.gz"
-    hpi_accuracy = pd.read_csv(str(data_path_accuracy), compression="gzip")
+    data_path_accuracy = mo.notebook_location() / "public" / "hpi_accuracy.csv"
+    hpi_accuracy = pd.read_csv(str(data_path_accuracy))
 
     _fig, ax = plt.subplots(1, 1, figsize=(7, 3))
 
@@ -210,65 +210,65 @@ def _(mo):
 
 
 @app.cell
-def _(pd, plt, yearly_data_hpi):
-    hpi_dates = pd.to_datetime(yearly_data_hpi["year"], format="%Y")
-    _fig, _axes = plt.subplots(3, 2, figsize=(16, 12), sharex=True)
-    _axes = _axes.flatten()
+def _():
+    # hpi_dates = pd.to_datetime(yearly_data_hpi["year"], format="%Y")
+    # _fig, _axes = plt.subplots(3, 2, figsize=(16, 12), sharex=True)
+    # _axes = _axes.flatten()
 
-    for _i in range(6):
-        if _i >= len(_properties):
-            _axes[_i].set_visible(False)
-            continue
+    # for _i in range(6):
+    #     if _i >= len(_properties):
+    #         _axes[_i].set_visible(False)
+    #         continue
 
-        _ax = _axes[_i]
-        _property_id = _properties.iloc[_i]["property_id"]
-        _property_label = ";".join(
-            _properties.iloc[_i][["paon", "saon", "street", "locality", "postcode"]]
-        )
+    #     _ax = _axes[_i]
+    #     _property_id = _properties.iloc[_i]["property_id"]
+    #     _property_label = ";".join(
+    #         _properties.iloc[_i][["paon", "saon", "street", "locality", "postcode"]]
+    #     )
 
-        # plot transactions
-        _df = _con.sql(
-            f"select * from transactions where property_id = '{_property_id}'"
-        ).df()
-        _df = _df.sort_values(by="deed_date")
-        _ax.plot(
-            _df["deed_date"].values,
-            _df["price_paid"].values,
-            "-x",
-            label=_property_label,
-        )
+    #     # plot transactions
+    #     _df = _con.sql(
+    #         f"select * from transactions where property_id = '{_property_id}'"
+    #     ).df()
+    #     _df = _df.sort_values(by="deed_date")
+    #     _ax.plot(
+    #         _df["deed_date"].values,
+    #         _df["price_paid"].values,
+    #         "-x",
+    #         label=_property_label,
+    #     )
 
-        # Plot prediction
-        _df = _con.sql(
-            f"select * from hpi_predictions where property_id = '{_property_id}'"
-        ).df()
-        _ax.plot(
-            pd.to_datetime(_df["year"], format="%Y"),
-            _df["predicted_price"],
-            label="Prediction",
-        )
+    #     # Plot prediction
+    #     _df = _con.sql(
+    #         f"select * from hpi_predictions where property_id = '{_property_id}'"
+    #     ).df()
+    #     _ax.plot(
+    #         pd.to_datetime(_df["year"], format="%Y"),
+    #         _df["predicted_price"],
+    #         label="Prediction",
+    #     )
 
-        # Plot HPI
-        _ax.plot(
-            hpi_dates,
-            yearly_data_hpi["mean_price"],
-            "-o",
-            color="tab:orange",
-            label="HPI Mean",
-        )
-        _ax.legend()
+    #     # Plot HPI
+    #     _ax.plot(
+    #         hpi_dates,
+    #         yearly_data_hpi["mean_price"],
+    #         "-o",
+    #         color="tab:orange",
+    #         label="HPI Mean",
+    #     )
+    #     _ax.legend()
 
-    _con.close()
-    plt.suptitle("Example predictions (most accurate)")
-    plt.tight_layout()
-    plt.show()
+    # _con.close()
+    # plt.suptitle("Example predictions (most accurate)")
+    # plt.tight_layout()
+    # plt.show()
     return
 
 
 @app.cell
 def _():
-    # data_path_accuracy = mo.notebook_location() / "public" / "hpi_accuracy.csv.gz"
-    # hpi_accuracy = pd.read_csv(str(data_path_accuracy), compression="gzip")
+    # data_path_accuracy = mo.notebook_location() / "public" / "hpi_accuracy.csv"
+    # hpi_accuracy = pd.read_csv(str(data_path_accuracy))
 
     # _fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 

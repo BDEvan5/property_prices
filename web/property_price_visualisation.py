@@ -42,19 +42,17 @@ def _(mo, np, pd, plt):
     _path = mo.notebook_location() / "public/price_distribution.csv"
     _df_distribution = pd.read_csv(str(_path))
 
-    bin_width = _df_distribution["bin_end"] - _df_distribution["bin_start"]
-    max_value = _df_distribution["bin_end"].max()
     _fig = plt.figure(figsize=(6, 3))
     plt.bar(
-        _df_distribution["bin_start"],
+        _df_distribution["bin_end"],
         _df_distribution["count"],
-        width=bin_width,
+        width=_df_distribution["bin_end"].iloc[0],
         align="edge",
     )
     plt.title("Distribution of Transaction Prices")
     plt.xlabel("Price Paid")
     plt.ylabel("Number of Transactions")
-    xtick_marks = np.arange(0, max_value + 1, 200000)
+    xtick_marks = np.arange(0, _df_distribution["bin_end"].max() + 1, 200000)
     plt.xticks(xtick_marks, [f"{int(x / 1000)}k" for x in xtick_marks])
 
     plt.gca().spines["top"].set_visible(False)

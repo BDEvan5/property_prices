@@ -1,16 +1,20 @@
--- Replicates property_prices/generate_website_data.py using COPY statements
+-- Export data for the property_price_visualisation.py notebook
 
 -- 1. Price Distribution    
--- WIP: not currently working....
--- COPY (
---     SELECT 
---         bin.key   AS bin_upper_edge,
---         bin.value AS frequency
---     FROM unnest(
---         select histogram(price_paid, equi_width_bins(0, 1000000, 100, false)) from transactions
---     ) AS bin(key, value)
---     ORDER BY bin_upper_edge;
--- ) TO 'web/public/price_distribution.csv' (FORMAT CSV, HEADER);
+COPY (
+    WITH stats AS (
+        SELECT histogram(price_paid, equi_width_bins(0, 1000000, 100, false)) AS hist_map
+        FROM transactions
+    )
+    SELECT 
+        entry.key AS bin_end, entry.value AS count
+    FROM (
+        SELECT unnest(map_entries(hist_map)) AS entry 
+        FROM stats
+    )
+    WHERE bin_end <= 1000000
+    ORDER BY bin_end
+) TO 'web/public/price_distribution.csv' (FORMAT CSV, HEADER);
 
 
 -- 2. Transaction Summary

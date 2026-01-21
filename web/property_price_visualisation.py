@@ -196,6 +196,76 @@ def _(mo, palette, pd, plt):
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""
+    ## Examples
+
+    To better understand where the model is successful, several examples are plotted in three categories:
+
+    1. Best predictions
+    2. Worst predictions
+    3. Properties with many transactions
+    """)
+    return
+
+
+@app.cell
+def _(pd, plt, yearly_data_hpi):
+    hpi_dates = pd.to_datetime(yearly_data_hpi["year"], format="%Y")
+    _fig, _axes = plt.subplots(3, 2, figsize=(16, 12), sharex=True)
+    _axes = _axes.flatten()
+
+    for _i in range(6):
+        if _i >= len(_properties):
+            _axes[_i].set_visible(False)
+            continue
+
+        _ax = _axes[_i]
+        _property_id = _properties.iloc[_i]["property_id"]
+        _property_label = ";".join(
+            _properties.iloc[_i][["paon", "saon", "street", "locality", "postcode"]]
+        )
+
+        # plot transactions
+        _df = _con.sql(
+            f"select * from transactions where property_id = '{_property_id}'"
+        ).df()
+        _df = _df.sort_values(by="deed_date")
+        _ax.plot(
+            _df["deed_date"].values,
+            _df["price_paid"].values,
+            "-x",
+            label=_property_label,
+        )
+
+        # Plot prediction
+        _df = _con.sql(
+            f"select * from hpi_predictions where property_id = '{_property_id}'"
+        ).df()
+        _ax.plot(
+            pd.to_datetime(_df["year"], format="%Y"),
+            _df["predicted_price"],
+            label="Prediction",
+        )
+
+        # Plot HPI
+        _ax.plot(
+            hpi_dates,
+            yearly_data_hpi["mean_price"],
+            "-o",
+            color="tab:orange",
+            label="HPI Mean",
+        )
+        _ax.legend()
+
+    _con.close()
+    plt.suptitle("Example predictions (most accurate)")
+    plt.tight_layout()
+    plt.show()
+    return
+
+
+@app.cell
 def _():
     # data_path_accuracy = mo.notebook_location() / "public" / "hpi_accuracy.csv.gz"
     # hpi_accuracy = pd.read_csv(str(data_path_accuracy), compression="gzip")

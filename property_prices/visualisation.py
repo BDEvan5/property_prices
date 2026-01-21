@@ -9,8 +9,9 @@ def _():
     import duckdb
     import matplotlib.pyplot as plt
     import numpy as np
+    import pandas as pd
 
-    return duckdb, np, plt
+    return duckdb, np, pd, plt
 
 
 @app.cell
@@ -85,7 +86,7 @@ def _(mo):
 def _(duckdb):
     year = 2015
 
-    _con = duckdb.connect("../data/properties.db")
+    _con = duckdb.connect("../data/_properties.db")
     df = _con.sql(f"SELECT * from transactions where year(deed_date) = {year}").df()
     _con.close()
     df.head()
@@ -93,8 +94,8 @@ def _(duckdb):
 
 
 @app.cell
-def _(df):
-    print(df[df["price_paid"] < 10000].shape[0])
+def _():
+    # print(df[df["price_paid"] < 10000].shape[0])
     return
 
 
@@ -121,12 +122,195 @@ def _(df, np, plt):
     plt.xlabel("Price Paid")
     plt.ylabel("Frequency")
     plt.legend()
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    # Plot errors
+    """)
+    return
+
+
+@app.cell
+def _(DATABASE_PATH, duckdb, pd, plt, yearly_data_hpi):
+    _con = duckdb.connect(DATABASE_PATH)
+    _properties = _con.sql(
+        "select * from properties where property_id in (select property_id from hpi_transaction_predictions group by property_id having count(*) >3 order by sum(abs(error)) asc limit 6);"
+    ).df()
+
+    hpi_dates = pd.to_datetime(yearly_data_hpi["year"], format="%Y")
+    _fig, _axes = plt.subplots(3, 2, figsize=(16, 12), sharex=True)
+    _axes = _axes.flatten()
+
+    for _i in range(6):
+        if _i >= len(_properties):
+            _axes[_i].set_visible(False)
+            continue
+
+        _ax = _axes[_i]
+        _property_id = _properties.iloc[_i]["property_id"]
+        _property_label = ";".join(
+            _properties.iloc[_i][["paon", "saon", "street", "locality", "postcode"]]
+        )
+
+        # plot transactions
+        _df = _con.sql(
+            f"select * from transactions where property_id = '{_property_id}'"
+        ).df()
+        _df = _df.sort_values(by="deed_date")
+        _ax.plot(
+            _df["deed_date"].values,
+            _df["price_paid"].values,
+            "-x",
+            label=_property_label,
+        )
+
+        # Plot prediction
+        _df = _con.sql(
+            f"select * from hpi_predictions where property_id = '{_property_id}'"
+        ).df()
+        _ax.plot(
+            pd.to_datetime(_df["year"], format="%Y"),
+            _df["predicted_price"],
+            label="Prediction",
+        )
+
+        # Plot HPI
+        _ax.plot(
+            hpi_dates,
+            yearly_data_hpi["mean_price"],
+            "-o",
+            color="tab:orange",
+            label="HPI Mean",
+        )
+        _ax.legend()
+
+    _con.close()
+    plt.suptitle("Example predictions (most accurate)")
+    plt.tight_layout()
+    plt.show()
+    return (hpi_dates,)
+
+
+@app.cell
+def _(DATABASE_PATH, duckdb, hpi_dates, pd, plt, yearly_data_hpi):
+    _con = duckdb.connect(DATABASE_PATH)
+    _properties = _con.sql(
+        "select * from properties where property_id in (select property_id from hpi_transaction_predictions group by property_id having count(*) >3 order by sum(abs(error)) desc limit 6);"
+    ).df()
+
+    _fig, _axes = plt.subplots(3, 2, figsize=(16, 12), sharex=True)
+    _axes = _axes.flatten()
+
+    for _i in range(6):
+        if _i >= len(_properties):
+            _axes[_i].set_visible(False)
+            continue
+
+        _ax = _axes[_i]
+        _property_id = _properties.iloc[_i]["property_id"]
+        _property_label = ";".join(
+            _properties.iloc[_i][["paon", "saon", "street", "locality", "postcode"]]
+        )
+
+        # plot transactions
+        _df = _con.sql(
+            f"select * from transactions where property_id = '{_property_id}'"
+        ).df()
+        _df = _df.sort_values(by="deed_date")
+        _ax.plot(
+            _df["deed_date"].values,
+            _df["price_paid"].values,
+            "-x",
+            label=_property_label,
+        )
+
+        # Plot prediction
+        _df = _con.sql(
+            f"select * from hpi_predictions where property_id = '{_property_id}'"
+        ).df()
+        _ax.plot(
+            pd.to_datetime(_df["year"], format="%Y"),
+            _df["predicted_price"],
+            label="Prediction",
+        )
+
+        # Plot HPI
+        _ax.plot(
+            hpi_dates,
+            yearly_data_hpi["mean_price"],
+            "-o",
+            color="tab:orange",
+            label="HPI Mean",
+        )
+        _ax.legend()
+
+    _con.close()
+    plt.suptitle("Example predictions (least accurate)")
+    plt.tight_layout()
     plt.show()
     return
 
 
 @app.cell
-def _():
+def _(DATABASE_PATH, duckdb, hpi_dates, pd, plt, yearly_data_hpi):
+    _con = duckdb.connect(DATABASE_PATH)
+    _properties = _con.sql(
+        "select * from properties where property_id in (select property_id from transactions group by property_id having count(*) >7);"
+    ).df()
+
+    _fig, _axes = plt.subplots(3, 2, figsize=(16, 12), sharex=True)
+    _axes = _axes.flatten()
+
+    for _i in range(6):
+        if _i >= len(_properties):
+            _axes[_i].set_visible(False)
+            continue
+
+        _ax = _axes[_i]
+        _property_id = _properties.iloc[_i]["property_id"]
+        _property_label = ";".join(
+            _properties.iloc[_i][["paon", "saon", "street", "locality", "postcode"]]
+        )
+
+        # plot transactions
+        _df = _con.sql(
+            f"select * from transactions where property_id = '{_property_id}'"
+        ).df()
+        _df = _df.sort_values(by="deed_date")
+        _ax.plot(
+            _df["deed_date"].values,
+            _df["price_paid"].values,
+            "-x",
+            label=_property_label,
+        )
+
+        # Plot prediction
+        _df = _con.sql(
+            f"select * from hpi_predictions where property_id = '{_property_id}'"
+        ).df()
+        _ax.plot(
+            pd.to_datetime(_df["year"], format="%Y"),
+            _df["predicted_price"],
+            label="Prediction",
+        )
+
+        # Plot HPI
+        _ax.plot(
+            hpi_dates,
+            yearly_data_hpi["mean_price"],
+            "-o",
+            color="tab:orange",
+            label="HPI Mean",
+        )
+        _ax.legend()
+
+    _con.close()
+    plt.suptitle("Example predictions (many transactions)")
+    plt.tight_layout()
+    plt.show()
     return
 
 

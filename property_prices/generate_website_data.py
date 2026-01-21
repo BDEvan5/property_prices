@@ -109,7 +109,58 @@ def _(DATABASE_PATH, data_path, duckdb):
     hpi_accuracy_df = get_hpi_accuracy()
     hpi_accuracy_df.to_csv(f"{data_path}/hpi_accuracy.csv.gz", index=False)
     hpi_accuracy_df.to_csv(f"{data_path}/hpi_accuracy.csv", index=False)
+    return
 
+
+@app.cell
+def _(DATABASE_PATH, data_path, duckdb):
+    def get_best_prediction_examples():
+        con = duckdb.connect(DATABASE_PATH)
+        df = con.sql(
+            "select * from properties where property_id in (select property_id from hpi_transaction_predictions group by property_id having count(*) >3 order by sum(abs(error)) asc limit 6);"
+        ).df()
+        con.close()
+        return df
+
+    best_predictions_df = get_best_prediction_examples()
+    best_predictions_df.to_csv(f"{data_path}/best_predictions.csv.gz", index=False)
+    best_predictions_df.to_csv(f"{data_path}/best_predictions.csv", index=False)
+    return
+
+
+@app.cell
+def _(DATABASE_PATH, data_path, duckdb):
+    def get_worst_prediction_examples():
+        con = duckdb.connect(DATABASE_PATH)
+        df = con.sql(
+            "select * from properties where property_id in (select property_id from hpi_transaction_predictions group by property_id having count(*) >3 order by sum(abs(error)) asc limit 6);"
+        ).df()
+        con.close()
+        return df
+
+    worst_predictions_df = get_worst_prediction_examples()
+    worst_predictions_df.to_csv(f"{data_path}/worst_predictions.csv.gz", index=False)
+    worst_predictions_df.to_csv(f"{data_path}/worst_predictions.csv", index=False)
+    return
+
+
+@app.cell
+def _(DATABASE_PATH, data_path, duckdb):
+    def get_prediction_examples_with_many_transactions():
+        con = duckdb.connect(DATABASE_PATH)
+        df = con.sql(
+            "select * from properties where property_id in (select property_id from transactions group by property_id having count(*) >7);"
+        ).df()
+        con.close()
+        return df
+
+    prediction_examples_df = get_prediction_examples_with_many_transactions()
+    prediction_examples_df.to_csv(
+        f"{data_path}/predictions_with_many_transactions.csv.gz", index=False
+    )
+    prediction_examples_df.to_csv(
+        f"{data_path}/predictions_with_many_transactions.csv", index=False
+    )
     return
 
 

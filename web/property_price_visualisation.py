@@ -21,13 +21,8 @@ def _(mo):
     mo.md("""
     # Property Price Prediction
 
-
-    > **Challenge:**
-    >
-    > Predict the transaction value for each property that was sold in 2025, using all the data until the end of 2024.
-    > The properties to predict are filtered to include residential transactions, with at least 1 previous sale (of the same estate type) and a value of less than £1M.
-
-    This prediction method can then be applied to estimate the current value of every property in the UK.
+    This project uses property data from the [HM Land Registry](https://landregistry.data.gov.uk/) to estimate the value of property transactions.
+    Since 1995, the Land Registry has been recording the price of every property transaction in the UK.
     """)
     return
 
@@ -36,7 +31,6 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ### Database Statistics (raw data)
-    Transaction data for every property transaction since 1995 is downloaded from [HM Land Registry](https://landregistry.data.gov.uk/).
     The raw data is loaded into a SQL database (DuckDB) and transformed to have properties and transactions tables.
     """)
     return
@@ -85,10 +79,14 @@ def _(mo):
     mo.md(r"""
     ### The 2025 Prediction challenge
 
+    > **Challenge:**
+    >
+    > Predict the transaction value for each property that was sold in 2025, using all the data until the end of 2024.
+
     The raw data above is cleaned for training and prediction by applying the following filters:
     - Prices below £1M and above £10k
     - Remove type 'B' commercial transactions
-    - Houses with constant property types, i.e. remove changes from plot () to house () # I don't think we need this? (D, T, S, O)
+    - Houses with constant property types
     - Remove houses with multiple transactions on the same day
     """)
     return

@@ -10,9 +10,10 @@ def _():
     import matplotlib.pyplot as plt
     import numpy as np
     import pandas as pd
+    from scipy.stats import gaussian_kde
 
     palette = plt.get_cmap("Set2").colors
-    return mo, np, palette, pd, plt
+    return gaussian_kde, mo, np, palette, pd, plt
 
 
 @app.cell
@@ -42,7 +43,7 @@ def _(mo):
 
 
 @app.cell
-def _(mo, np, pd, plt):
+def _(mo, np, palette, pd, plt):
     _df = pd.read_csv(
         str(mo.notebook_location()) + "/public/transaction_summary.csv",
         index_col=0,
@@ -64,6 +65,7 @@ def _(mo, np, pd, plt):
         _df_distribution["count"],
         width=_df_distribution["bin_end"].iloc[0],
         align="edge",
+        color=palette[1],
     )
     plt.title("Distribution of Transaction Prices")
     plt.xlabel("Price Paid")
@@ -93,10 +95,45 @@ def _(mo):
 
 
 @app.cell
+def _(mo, palette, pd, plt):
+    _df = pd.read_csv(
+        str(mo.notebook_location()) + "/public/transactions_cleaned_by_year.csv",
+        header=0,
+    )
+
+    # Create standalone plot
+    _fig, _ax = plt.subplots(figsize=(8, 3))
+
+    _ax.bar(
+        _df["transaction_year"] - 0.2,
+        _df["count_all"],
+        color=palette[3],
+        label="All transactions",
+        width=0.4,
+    )
+    _ax.bar(
+        _df["transaction_year"] + 0.2,
+        _df["count_cleaned"],
+        color=palette[2],
+        label="Cleaned transactions",
+        width=0.4,
+    )
+
+    _ax.set_title("Num Transactions per Year")
+    _ax.set_xlabel("Year")
+    _ax.grid(axis="y")
+    _ax.spines["top"].set_visible(False)
+    _ax.spines["right"].set_visible(False)
+    _ax.legend()
+
+    plt.tight_layout()
+    plt.show()
+    return
+
+
+@app.cell
 def _():
-    # TODO: add statistics on the 2025 prediction challenge. How many properties are there?
-    # - how many property transactions do I pick each year compared to all transactions
-    # - Add a distribution of transactions for the 2025 challenge, or barplot per year or something
+    # TODO: consider adding a pie chart showing how many transactions each filter excluded
     return
 
 
@@ -118,314 +155,50 @@ def _(mo):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ### Calculate national yearly average
+    ## 1. Calculate national yearly average
     """)
     return
 
 
 @app.cell
 def _(mo, palette, pd, plt):
-    # TODO: add IQR for the average and possibly remove the volume
-    # Move the volume to the database statistic above for the 2025 challenge
+    _data_path = mo.notebook_location() / "public" / "national_year_avg.csv"
+    _df = pd.read_csv(str(_data_path))
 
-    data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
-    _df = pd.read_csv(str(data_path))
-    hpi_data_path = mo.notebook_location() / "public" / "hpi_avg_yearly_sales.csv"
-    _df_hpi = pd.read_csv(str(hpi_data_path))
-
-    fig, axs = plt.subplots(1, 2, figsize=(10, 4))
+    _fig, _axs = plt.subplots(1, 1, figsize=(10, 4))
 
     # Plot average price per year
-    axs[0].plot(
+    plt.plot(
         _df["year"],
         _df["mean_price"] / 1000,
-        marker="o",
+        marker=".",
         color=palette[0],
-        label="National average",
+        label="Mean",
     )
-    axs[0].plot(
-        _df_hpi["year"],
-        _df_hpi["mean_price"] / 1000,
-        marker="o",
-        color=palette[1],
-        label="HPI",
-    )
-    axs[0].set_title("Average Price per Year (£1k)")
-    axs[0].set_xlabel("Year")
-    axs[0].grid(True)
-    axs[0].spines["top"].set_visible(False)
-    axs[0].spines["right"].set_visible(False)
-    axs[0].legend()
-
-    # Plot sales count per year
-    axs[1].bar(
-        _df["year"] - 0.2,
-        _df["volume"],
-        color=palette[2],
-        label="National average",
-        width=0.4,
-    )
-    axs[1].bar(
-        _df_hpi["year"] + 0.2,
-        _df_hpi["volume"],
-        color=palette[3],
-        label="HPI",
-        width=0.4,
-    )
-    axs[1].set_title("Transactions Count per Year")
-    axs[1].set_xlabel("Year")
-    axs[1].grid(axis="y")
-    axs[1].spines["top"].set_visible(False)
-    axs[1].spines["right"].set_visible(False)
-    axs[1].legend()
-
-    plt.tight_layout()
-    fig  # noqa: B018
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
-    ### Estimate the relative value of each property
-
-    For each property transaction, I divide the price paid by the yearly mean to calculate the price-market-ratio (PMR).
-    The transactions for each property are aggregated to provide a per-property PMR, which is a time-independant measure of value.
-    """)
-    return
-
-
-@app.cell
-def _():
-    # TODO: add analysis on the proportion of mean here.... Distribution?
-    # TODO: analyse the variance of them here -- that is an introduction to error estimation
-
-    # TODO: show how I calculate the PMR for each transaction and then take the average for the house
-
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
-    ### Make Predictions for 2025
-
-    The average property price of 2024, was £XXX,XXX. This average is multipled by each properties PMR
-    """)
-    return
-
-
-@app.cell
-def _():
-    # TODO: show distribution of all predictions
-    # Calculate what the 2025 mean would be?
-    # Show a correlation plot - that can look cool
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
-    # Analyse predictions
-
-    The predictions are analysed by:
-    - Filtering them to properties that actually sold in 2025
-    - Calculating the prediction accuracy
-    - Investigating the distribution of errors
-    - Showing example predictions (best & worst)
-    """)
-    return
-
-
-@app.cell
-def _():
-    # TODO: filter transactions and show a pie chart or something simple.
-    return
-
-
-@app.cell
-def _():
-    # Calculate total predictions accuracy
-    return
-
-
-@app.cell
-def _():
-    # Show distribution of errors to explain the accuracy
-    return
-
-
-@app.cell
-def _():
-    # Show example predictions for best and worst
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
-    # Conclusion
-
-    This project used historical price data to predict the selling price of properties in 2025. The price-market-ratio for each house was calculated and used to make a prediction. The method resulted in an accuracy of XX%.
-
-    Future versions of the project plan to:
-    - Model improvements:
-        - Estimate the confidence of the prediction, i.e. what error is due to property variance (irreducible) vs model bias (reducible)
-        - Improve predictions by using the location (postcode) of each property
-        - Use a rolling average rather than fixed yearly average
-    - Deploy database as DuckLake and automate database expansion
-    - Build interactive website that estimates the real-value of each property
-    """)
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
-    # Supplementary analysis
-
-    Additional analysis that was performed, but is not essential:
-    - Historical accuracy
-    - Examples with many transactions
-    """)
-    return
-
-
-@app.cell
-def _():
-    return
-
-
-@app.cell
-def _():
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md("""
-    ## House Price Index
-
-    The raw data contains many outliers that distort the mean and standard deviation of most of the transactions. Additionally, the addition of new build houses (first time sales) skews the data.
-    Therefore, the transaction data was filtered using the following steps:
-    - Select transactions below the 99th percentile of the yearly average national price
-    - Select properties with 2 or more transactions
-
-    This results in the follow house-price-index (HPI) chart with corresponding volume.
-    """)
-    return
-
-
-@app.cell
-def _(mo, palette, pd, plt):
-    data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
-    _df = pd.read_csv(str(data_path))
-    hpi_data_path = mo.notebook_location() / "public" / "hpi_avg_yearly_sales.csv"
-    _df_hpi = pd.read_csv(str(hpi_data_path))
-
-    fig, axs = plt.subplots(1, 2, figsize=(10, 4))
-
-    # Plot average price per year
-    axs[0].plot(
+    plt.plot(
         _df["year"],
-        _df["mean_price"] / 1000,
-        marker="o",
-        color=palette[0],
-        label="National average",
-    )
-    axs[0].plot(
-        _df_hpi["year"],
-        _df_hpi["mean_price"] / 1000,
-        marker="o",
-        color=palette[1],
-        label="HPI",
-    )
-    axs[0].set_title("Average Price per Year (£1k)")
-    axs[0].set_xlabel("Year")
-    axs[0].grid(True)
-    axs[0].spines["top"].set_visible(False)
-    axs[0].spines["right"].set_visible(False)
-    axs[0].legend()
-
-    # Plot sales count per year
-    axs[1].bar(
-        _df["year"] - 0.2,
-        _df["volume"],
-        color=palette[2],
-        label="National average",
-        width=0.4,
-    )
-    axs[1].bar(
-        _df_hpi["year"] + 0.2,
-        _df_hpi["volume"],
+        _df["median"] / 1000,
+        "--",
         color=palette[3],
-        label="HPI",
-        width=0.4,
+        label="Median",
     )
-    axs[1].set_title("Transactions Count per Year")
-    axs[1].set_xlabel("Year")
-    axs[1].grid(axis="y")
-    axs[1].spines["top"].set_visible(False)
-    axs[1].spines["right"].set_visible(False)
-    axs[1].legend()
 
-    plt.tight_layout()
-    fig  # noqa: B018
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md("""
-    The graph shows how the HPI is a more stable estimate of the mean price and is more useful for estimating future prices.
-
-    The transaction count graph shos how after the 2008 crash, much fewer property transactions occurred.
-    """)
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
-    ## Modelling
-
-    The first approach is to build a baseline as the most simple model possible.
-    This involves:
-    - Calculating the proportion of the price of each property to the HPI of the previous year
-        - e.g. for a house that cost 300,000 in 2011, (the HPI in 2010 is 200,000), the proportion of the HPI is 300,000 / 200,000 = 1.5
-    - For each year after the first transaction, make a prediction using the previous year's HPI
-        - e.g. To predict the price of the house above in 2025, multiple the factor (1.2) by the 2024 HPI of 270
-    - Apply this approach to make a prediction for every property for every year.
-
-
-    The accuracy of the method is measured by using the transaction data and calculating the difference between the estimated price and the actual transaction price.
-    The percentage error which is calculated by dividing the absolute difference by the actual transaction price.
-    The mean absolute error each year and mean absolute percentage error are plotted below.
-
-    NOTE: the transactions are filtered to remove houses above £1M and below £10,000 since these transactions are outliers and a more complex model is required to predict their prices.
-    """)
-    return
-
-
-@app.cell
-def _(mo, palette, pd, plt):
-    data_path_accuracy = mo.notebook_location() / "public" / "hpi_accuracy.csv"
-    hpi_accuracy = pd.read_csv(str(data_path_accuracy))
-
-    _fig, ax = plt.subplots(1, 1, figsize=(7, 3))
-
-    ax.plot(
-        hpi_accuracy["year"],
-        hpi_accuracy["mean_error_percentage"] * 100,
-        color=palette[0],
-        linewidth=2,
+    plt.fill_between(
+        _df["year"],
+        _df["q1"] / 1000,
+        _df["q3"] / 1000,
+        alpha=0.2,
+        label="Inter-quartile range",
+        color=palette[1],
     )
-    ax.set_title("HPI Mean Error Percentage")
-    ax.set_xlabel("Year")
-    ax.set_ylabel("Mean Error Percentage (%)")
-    ax.grid(axis="y")
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
+
+    plt.title("Aggregated transaction price")
+    plt.xlabel("Year")
+    plt.ylabel("Price (£1k)")
+    plt.grid(axis="y")
+    plt.gca().spines["top"].set_visible(False)
+    plt.gca().spines["right"].set_visible(False)
+    plt.legend()
 
     plt.tight_layout()
     _fig  # noqa: B018
@@ -435,112 +208,419 @@ def _(mo, palette, pd, plt):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## Examples
+    ## 2. Estimate the relative value of each property
 
-    To better understand where the model is successful, several examples are plotted in three categories:
-
-    1. Best predictions
-    2. Worst predictions
-    3. Properties with many transactions
+    For each property transaction, I divide the price paid by the yearly mean to calculate the price-market-ratio (PMR).
+    The transactions for each property are aggregated to provide a per-property PMR, which is a time-independant measure of value.
     """)
     return
 
 
 @app.cell
-def _():
-    # hpi_dates = pd.to_datetime(yearly_data_hpi["year"], format="%Y")
-    # _fig, _axes = plt.subplots(3, 2, figsize=(16, 12), sharex=True)
-    # _axes = _axes.flatten()
+def _(mo, palette, pd, plt):
+    # TODO: add analysis on the proportion of mean here.... Distribution?
+    # TODO: analyse the variance of them here -- that is an introduction to error estimation
 
-    # for _i in range(6):
-    #     if _i >= len(_properties):
-    #         _axes[_i].set_visible(False)
-    #         continue
+    # TODO: show how I calculate the PMR for each transaction and then take the average for the house
 
-    #     _ax = _axes[_i]
-    #     _property_id = _properties.iloc[_i]["property_id"]
-    #     _property_label = ";".join(
-    #         _properties.iloc[_i][["paon", "saon", "street", "locality", "postcode"]]
-    #     )
+    _data_path = mo.notebook_location() / "public" / "national_year_avg.csv"
+    _df = pd.read_csv(str(_data_path))
 
-    #     # plot transactions
-    #     _df = _con.sql(
-    #         f"select * from transactions where property_id = '{_property_id}'"
-    #     ).df()
-    #     _df = _df.sort_values(by="deed_date")
-    #     _ax.plot(
-    #         _df["deed_date"].values,
-    #         _df["price_paid"].values,
-    #         "-x",
-    #         label=_property_label,
-    #     )
+    _fig, _axs = plt.subplots(2, 1, figsize=(8, 4), sharex=True)
 
-    #     # Plot prediction
-    #     _df = _con.sql(
-    #         f"select * from hpi_predictions where property_id = '{_property_id}'"
-    #     ).df()
-    #     _ax.plot(
-    #         pd.to_datetime(_df["year"], format="%Y"),
-    #         _df["predicted_price"],
-    #         label="Prediction",
-    #     )
+    # Plot average price per year on the top subplot
+    _axs[0].plot(
+        _df["year"],
+        _df["mean_price"] / 1000,
+        marker=".",
+        color=palette[0],
+        label="National mean",
+    )
 
-    #     # Plot HPI
-    #     _ax.plot(
-    #         hpi_dates,
-    #         yearly_data_hpi["mean_price"],
-    #         "-o",
-    #         color="tab:orange",
-    #         label="HPI Mean",
-    #     )
-    #     _ax.legend()
+    _data_path = mo.notebook_location() / "public" / "example_prediction.csv"
+    _df2 = pd.read_csv(str(_data_path))
 
-    # _con.close()
-    # plt.suptitle("Example predictions (most accurate)")
-    # plt.tight_layout()
-    # plt.show()
-    return
+    # _axs[0].plot(
+    #     _df2["year"],
+    #     _df2["predicted_price"] / 1000,
+    #     color=palette[1],
+    #     label="Predicted price",
+    # )
+    _axs[0].plot(
+        _df2["year"],
+        _df2["price_paid"] / 1000,
+        marker="X",
+        linewidth=0,
+        color=palette[2],
+        label="Transaction price",
+    )
 
+    # _axs[0].set_xlabel("Year")
+    _axs[0].set_ylabel("Price (£1k)")
+    _axs[0].grid(axis="y")
+    _axs[0].spines["top"].set_visible(False)
+    _axs[0].spines["right"].set_visible(False)
+    _axs[0].legend()
 
-@app.cell
-def _():
-    # data_path_accuracy = mo.notebook_location() / "public" / "hpi_accuracy.csv"
-    # hpi_accuracy = pd.read_csv(str(data_path_accuracy))
+    _transactions = _df2[_df2["price_paid"].notna()].merge(_df, on="year", how="left")
+    _transactions["pmr"] = _transactions["price_paid"] / _transactions["mean_price"]
 
-    # _fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+    _axs[1].bar(
+        _transactions["year"],
+        _transactions["pmr"] - 1,
+        bottom=1,
+        color=palette[2],
+        label="PMR",
+    )
+    mean_pmr = _transactions["pmr"].mean()
+    _axs[1].axhline(
+        mean_pmr, color=palette[2], linewidth=1.5, linestyle="--", label="Mean PMR"
+    )
+    _axs[1].axhline(1, color="black", linewidth=1.5)
+    _axs[1].set_ylabel("Price market ratio")
+    _axs[1].set_xlabel("Year")
+    _axs[1].set_ylim(0, 2)
+    # _axs[1].set_ylim(0.4, 1.1)
+    _axs[1].grid(axis="y")
+    _axs[1].text(2020, 0.6, f"Mean PMR: {mean_pmr:.2f}")
 
-    # ax1.plot(hpi_accuracy['year'], hpi_accuracy['mean_absolute_error'], color=palette[0])
-    # ax1.set_title('HPI Mean Absolute Error')
-    # ax1.set_xlabel('Year')
-    # ax1.set_ylabel('Mean Absolute Error')
-    # ax1.spines["top"].set_visible(False)
-    # ax1.spines["right"].set_visible(False)
+    _axs[1].spines["top"].set_visible(False)
+    _axs[1].spines["right"].set_visible(False)
+    _axs[1].spines["bottom"].set_visible(False)
+    _axs[1].legend(loc="upper left")
 
-    # ax2.plot(hpi_accuracy['year'], hpi_accuracy['mean_error_percentage'], color=palette[1])
-    # ax2.set_title('HPI Mean Absolute Percentage Error')
-    # ax2.set_xlabel('Year')
-    # ax2.set_ylabel('Mean Absolute Percentage Error')
-    # ax2.spines["top"].set_visible(False)
-    # ax2.spines["right"].set_visible(False)
-
-    # plt.tight_layout()
-    # plt.show()
+    plt.tight_layout()
+    _fig  # noqa: B018
     return
 
 
 @app.cell
 def _(mo):
-    mo.md("""
-    ## Conclusion
+    mo.md(r"""
+    ## 3. Make Predictions for 2025
 
-    This v0.2 project analyses a dataset of property transactions in the UK.
+    The average property price of 2024, was £285,094. This average is multipled by each properties PMR.
+    """)
+    return
+
+
+@app.cell
+def _(mo, palette, pd, plt):
+    _data_path = mo.notebook_location() / "public" / "2025_predictions.csv"
+    _df = pd.read_csv(_data_path)
+
+    _fig, _ax = plt.subplots(figsize=(7, 2.5))
+
+    _ax.hist(
+        _df["predicted_price"] / 1000,
+        bins=100,
+        color=palette[0],
+        label="Predicted Price",
+    )
+    plt.title("Distribution of Predicted Prices")
+    plt.xlabel("Predicted Price")
+    plt.ylabel("Frequency")
+
+    _ax.set_xlabel("Predicted Price (£1k)")
+    _ax.set_ylabel("Frequency")
+
+    _mean_pred = _df["predicted_price"].mean() / 1000
+    _ax.axvline(_mean_pred, color="gray", linestyle="--", alpha=0.6, label="Mean")
+    _q1, _q3 = (_df["predicted_price"] / 1000).quantile([0.25, 0.75])
+    _ax.axvspan(_q1, _q3, color=palette[5], alpha=0.2, label="IQR")
+    _ax.legend(frameon=False)
+
+    _ax.spines["top"].set_visible(False)
+    _ax.spines["right"].set_visible(False)
+
+    _fig  # noqa: B018
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    # Analyse Predictions
+
+    For each prediction, the error is calculated as the absolute difference between the predicted price and the actual price. To make the errors comparable between properties of different values, the absolute error is divided by the actual price and multiplied by 100 to get the error percentage.
+    """)
+    return
+
+
+@app.cell
+def _(mo, pd):
+    _data_path = mo.notebook_location() / "public" / "2025_predictions.csv"
+    _df = pd.read_csv(_data_path)
+
+    _df["abs_error"] = (_df["price_paid"] - _df["predicted_price"]).abs()
+    _df["error_percentage"] = (_df["price_paid"] - _df["predicted_price"]).abs() / _df[
+        "price_paid"
+    ]
+
+    mae = _df["error_percentage"].mean() * 100
+    medae = _df["error_percentage"].median() * 100
+    q1 = _df["error_percentage"].quantile(0.25) * 100
+    q3 = _df["error_percentage"].quantile(0.75) * 100
+    # most_accurate_prediction = _df.loc[_df["abs_error"].idxmin()]
+
+    mo.md(f"""
+    - Mean absolute error percentage: {mae:,.2f}%
+    - Median absolute error percentage: {medae:,.2f}%
+    - Interquartile range of error: {q1:,.2f}% to {q3:,.2f}%
+
+    The mean predictions error per property is £{_df["abs_error"].mean():,.2f}
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## Visualisation of accuracy
+
+    The correlation of the predicted vs actual price is plotted to provide an intuitive sense of the accuracy of the predictions.
+    Additionally, we plot a histogram showing the distributions of the absolute error percentages.
+    """)
+    return
+
+
+@app.cell
+def _(gaussian_kde, mo, np, palette, pd, plt):
+    _data_path = mo.notebook_location() / "public" / "2025_predictions.csv"
+    _df = pd.read_csv(_data_path)
+
+    xy = np.vstack([_df["price_paid"], _df["predicted_price"]]) / 1000
+    z = gaussian_kde(xy)(xy)
+
+    _fig, _axs = plt.subplots(1, 2, figsize=(12, 4))
+
+    _axs[0].scatter(
+        _df["price_paid"] / 1000,
+        _df["predicted_price"] / 1000,
+        s=5,
+        c=z,
+    )
+    plt.sca(_axs[0])
+    plt.ylim(0, 1e3)
+    plt.title("Correlation of 2025 predictions")
+    plt.xlabel("Price Paid (£1k)")
+    plt.ylabel("Predicted Price (£1k)")
+
+    _mean_paid = _df["price_paid"].mean() / 1000
+    _mean_pred = _df["predicted_price"].mean() / 1000
+
+    _axs[0].axvline(_mean_paid, color="gray", linestyle="--", alpha=0.6)
+    _axs[0].axhline(_mean_pred, color="gray", linestyle="--", alpha=0.6)
+    _axs[0].text(
+        _mean_paid + 20,
+        800,
+        f"Mean\nPaid:\n£{_mean_paid:.1f}k",
+        fontsize=9,
+        bbox={"facecolor": "white", "alpha": 0.5, "edgecolor": "none"},
+    )
+    _axs[0].text(
+        500,
+        _mean_pred + 20,
+        f"Mean Predicted: £{_mean_pred:.1f}k",
+        fontsize=9,
+        bbox={"facecolor": "white", "alpha": 0.5, "edgecolor": "none"},
+    )
+
+    _axs[0].set_aspect("equal", adjustable="box")
+    _axs[0].spines["top"].set_visible(False)
+    _axs[0].spines["right"].set_visible(False)
+
+    _error_pct = (
+        np.abs((_df["predicted_price"] - _df["price_paid"]) / _df["price_paid"]) * 100
+    )
+    _axs[1].hist(_error_pct, bins=50, range=(0, 100), color=palette[2])
+    _axs[1].set_title("Absolute Error Percentage")
+    _axs[1].set_xlabel("Error (%)")
+    _axs[1].set_ylabel("Frequency")
+    _axs[1].spines["top"].set_visible(False)
+    _axs[1].spines["right"].set_visible(False)
+
+    _mean_error = _error_pct.mean()
+    _axs[1].axvline(_mean_error, color="gray", linestyle="--", alpha=0.6)
+    _axs[1].text(
+        _mean_error + 2,
+        _axs[1].get_ylim()[1] * 0.8,
+        f"Mean Error: {_mean_error:.1f}%",
+        fontsize=9,
+        bbox={"facecolor": "white", "alpha": 0.5, "edgecolor": "none"},
+    )
+    _median_error = _error_pct.median()
+    _axs[1].axvline(_median_error, color="gray", linestyle="--", alpha=0.6)
+    _axs[1].text(
+        _median_error + 2,
+        _axs[1].get_ylim()[1] * 0.6,
+        f"Median Error: {_median_error:.1f}%",
+        fontsize=9,
+        bbox={"facecolor": "white", "alpha": 0.5, "edgecolor": "none"},
+    )
+
+    plt.show()
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## Example predictions
+
+    To illustrate how the predictions are made, we show examples of the best and worst predictions.
+
+    - **Best prediction**: The top graph shows that the purple cross (transaction in 2025) is very close to the predicted orange line. Visibly, this property has had a stable PMR over the years, and the prediction is therefore accurate.
+    - **Worst prediction**: The bottom graph shows that the purple cross (transaction in 2025) is very close to the predicted orange line. The sale in 2025, was less than half what the property sold for previously, meaning that something unknown has occured with this property. This is more of a bad data point than a poor prediction, since it is impossible to predict such an event.
+    """)
+    return
+
+
+@app.cell
+def _(mo, palette, pd, plt):
+    _data_path = mo.notebook_location() / "public" / "national_year_avg.csv"
+    _df = pd.read_csv(str(_data_path))
+
+    _fig, _axs = plt.subplots(2, 1, figsize=(8, 4), sharex=True)
+
+    # Plot average price per year on the top subplot
+    for i in range(2):
+        _axs[i].plot(
+            _df["year"],
+            _df["mean_price"] / 1000,
+            marker=".",
+            color=palette[0],
+            label="National mean",
+        )
+
+    _data_path = mo.notebook_location() / "public" / "example_prediction_best.csv"
+    _df1 = pd.read_csv(str(_data_path))
+
+    _axs[0].plot(
+        _df1["year"],
+        _df1["predicted_price"] / 1000,
+        color=palette[1],
+        label="Predicted price",
+    )
+    _axs[0].plot(
+        _df1["year"],
+        _df1["price_paid"] / 1000,
+        marker="X",
+        linewidth=0,
+        color=palette[2],
+        label="Transaction price",
+    )
+
+    # _axs[0].set_xlabel("Year")
+    _axs[0].set_ylabel("Price (£1k)")
+    _axs[0].grid(axis="y")
+    _axs[0].spines["top"].set_visible(False)
+    _axs[0].spines["right"].set_visible(False)
+    _axs[0].legend(loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.2))
+    _axs[0].set_ylim(0, 300)
+
+    _data_path = mo.notebook_location() / "public" / "example_prediction_worst.csv"
+    _df2 = pd.read_csv(str(_data_path))
+
+    _axs[1].plot(
+        _df2["year"],
+        _df2["predicted_price"] / 1000,
+        color=palette[1],
+        label="Predicted price",
+    )
+    _axs[1].plot(
+        _df2["year"],
+        _df2["price_paid"] / 1000,
+        marker="X",
+        linewidth=0,
+        color=palette[2],
+        label="Transaction price",
+    )
+
+    _axs[1].set_xlabel("Year")
+    _axs[1].set_ylabel("Price (£1k)")
+    _axs[1].grid(axis="y")
+    _axs[1].spines["top"].set_visible(False)
+    _axs[1].spines["right"].set_visible(False)
+
+    x_pos = 2009
+    y_pos = 260
+    _axs[0].text(x_pos, y_pos, "Best prediction", fontweight="bold")
+    _axs[1].text(x_pos, y_pos, "Worst prediction", fontweight="bold")
+
+    plt.xlim(2008.5, 2025.5)
+
+    plt.tight_layout()
+    _fig  # noqa: B018
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    # Conclusion
+
+    This project used historical price data to predict the selling price of properties in 2025. The price-market-ratio for each house was calculated and used to make a prediction. The method resulted in an accuracy of 13.23%.
 
     Future versions of the project plan to:
-    - Develop a model to estimate individual property prices
-    - Use a more complex model to predict prices
-    - Automate dataset expansion, model prediction & accuracy tracking
-    - Take other information into account, such as the interest rate
+    1. Model improvements:
+        - Estimate the confidence of the prediction, i.e. what error is due to property variance (irreducible) vs model bias (reducible)
+        - Improve predictions by using the location (postcode) of each property
+        - Use a rolling average rather than fixed yearly average
+    2. Deploy database as DuckLake and automate database expansion
+    3. Build interactive website that estimates the real-value of each property (depends on a deployed database)
     """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    # Supplementary analysis (backtesting)
+
+    The modelling approach was tested by using the same approach for each year that data was available. The mean errors plotted below show that the model consistently achieves between 10% - 15% errors through most years, with a spike after the 2008 crash.
+    """)
+    return
+
+
+@app.cell
+def _(mo, palette, pd, plt):
+    _data_path = mo.notebook_location() / "public" / "yearly_accuracy.csv"
+    _df = pd.read_csv(str(_data_path))
+
+    _fig, _axs = plt.subplots(1, 1, figsize=(10, 4))
+
+    # Plot average price per year
+    plt.plot(
+        _df["year"],
+        _df["mean_absolute_error_percentage"] * 100,
+        marker="o",
+        color=palette[0],
+        label="Mean",
+        linewidth=2,
+    )
+
+    plt.fill_between(
+        _df["year"],
+        _df["absolute_error_percentage_q1"] * 100,
+        _df["absolute_error_percentage_q3"] * 100,
+        alpha=0.2,
+        label="Inter-quartile range",
+        color=palette[1],
+    )
+
+    plt.title(
+        "Historical yearly prediction accuracy", ha="left", x=0.02, y=1, va="center"
+    )
+    plt.xlabel("Year")
+    plt.ylabel("Absolute error percentage")
+    plt.grid(axis="y")
+    plt.gca().spines["top"].set_visible(False)
+    plt.gca().spines["right"].set_visible(False)
+    plt.legend(ncol=2, frameon=False, bbox_to_anchor=(0.8, 1.1), loc="upper center")
+
+    plt.tight_layout()
+    _fig  # noqa: B018
     return
 
 

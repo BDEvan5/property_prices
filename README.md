@@ -70,6 +70,5 @@ uv run marimo export html web/property_price_visualisation.py -o output_dir/inde
 - transform.sql -> create tables
 - clean_dataset.sql -> view
 - aggregate_data.sql -> tables
-- calculate_pmr? analyse_data? Just do a make_predictions.sql
+- make_predictions.sql
 - calculate_accuracy.sql
-- export_data_to_csv - ideally, include this in each step

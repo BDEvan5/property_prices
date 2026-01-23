@@ -1,6 +1,7 @@
 
 output_dir/*
-
+CLAUDE.md
+AGENT.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

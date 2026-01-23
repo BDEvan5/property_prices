@@ -28,4 +28,18 @@ CREATE OR REPLACE VIEW transactions_cleaned AS (
 );
 
 -- TODO: add data export for clean vs all transactions
+
+COPY (
+    WITH cleaned as (
+        select count(*) as count_cleaned, year(deed_date) as transaction_year from transactions_cleaned group by year(deed_date) order by year(deed_date)
+    ), 
+    all_transactions as (
+        select count(*) as count_all, year(deed_date) as transaction_year from transactions group by year(deed_date) order by year(deed_date)
+    )
+    select transaction_year, count_all, count_cleaned from cleaned join all_transactions using (transaction_year)
+) TO '/Users/b.evans/Documents/ml_development/property_prices/web/public/transactions_cleaned_by_year.csv' WITH (HEADER, DELIMITER ',');
+
+
 --TODO: export counts of properties with each category (> 1M, <10k, transaction_category A, etc...) Show breakdown of why I clean like I do.
+
+

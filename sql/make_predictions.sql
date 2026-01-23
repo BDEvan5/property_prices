@@ -52,3 +52,29 @@ INSERT INTO predictions (
 -- 4. Export data
 
 -- TODO: export example with >8 transactions with the PMR per-transaction and for the property and the predicted prices for each year after purchase.
+
+
+COPY (
+    with example_properties as (
+        select property_id, count(*) as transactions_count from transactions_cleaned group by property_id  having transactions_count > 5 order by transactions_count desc
+    )
+    select 
+        p.year, p.predicted_price, t.price_paid 
+    from predictions p left join transactions_cleaned t on p.property_id = t.property_id and p.year = year(t.deed_date)
+    where p.property_id in (select property_id from example_properties limit 1)
+    order by p.year
+) TO '/Users/b.evans/Documents/ml_development/property_prices/web/public/example_prediction.csv' WITH CSV HEADER;
+
+
+
+COPY (
+    with example_properties as (
+        select property_id, count(*) as transactions_count from transactions_cleaned group by property_id  having transactions_count > 5 order by transactions_count desc
+    )
+    select 
+        p.year, p.predicted_price, t.price_paid 
+    from predictions p left join transactions_cleaned t on p.property_id = t.property_id and p.year = year(t.deed_date)
+    where p.property_id in (select property_id from example_properties limit 1 offset 1)
+    order by p.year
+) TO '/Users/b.evans/Documents/ml_development/property_prices/web/public/example_prediction_worst.csv' WITH CSV HEADER;
+

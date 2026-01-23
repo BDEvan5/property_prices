@@ -30,12 +30,12 @@ jobs:
 
             - name: 📄 Export notebook
               run: |
-                  uv run marimo export html-wasm web/property_price_visualisation.py -o property_price_visualisation --mode run
+                  uv run marimo export html web/property_price_visualisation.py -o web/output/index.html --no-include-code
 
             - name: 📦 Upload Pages Artifact
               uses: actions/upload-pages-artifact@v3
               with:
-                  path: property_price_visualisation
+                  path: web/output
 
     deploy:
         needs: build

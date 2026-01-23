@@ -3,27 +3,35 @@
 >**🎯 Aim:** 
 > Accurately model (and predict) property transactions in the UK. For example, given a properties address and previous transactions, how accurately can I predict future transactions?
 
-Demo: a current (work-in-progress) demo is available at: https://bdevan5.github.io/property_prices/
+Demo: a current demo is available at: https://bdevan5.github.io/property_prices/
 
 ## 🧰 Code 
 
 **SQL files for data processing:**
-- `load_data.sql` Extract and load transaction data from HM land registry into a SQL database (using DuckDB).
-- `transform.sql` Transform the raw data to extract property and transaction tables
-- `aggregate_yearly_data.sql` Aggregate the dataset to find yearly averages for each postcode, region and district
-- `house_price_index.sql` Calculate the house price index (HPI) of filtered transactions
-- `hpi_predictions.sql` Make predictions for each property using the HPI
-- `calculate_accuracy.sql` Calculate the accuracy of the HPI predictions
+- `load_data.sql`: Extract and load transaction data from HM land registry into a SQL database (using DuckDB).
+- `transform.sql`: Transform the raw data to extract property and transaction tables and create a postcode view.
+- `clean_dataset.sql`: Filter transactions to remove anomalies and ensure data quality.
+- `aggregate_yearly.sql`: Aggregate the dataset to find yearly averages for each postcode, region, district, and nationally.
+- `make_predictions.sql`: Calculate z-scores for properties and generate price predictions based on national averages.
+- `calculate_accuracy.sql`: Calculate the accuracy of the predictions against actual transaction data.
+- `export_data_to_csv.sql`: Export various metrics and datasets to CSV for the web visualization.
 
 
 ## 💪 Upcoming tasks
 
-
-1. **Predict individual property transactions:** Apply the model that can predict averages to predict individual transactions, i.e. given 2 previous transactions on a property predict the next transaction price (at varying time horizons)
-2. **Improve the model:** Explore more complex models to improve the predictions
-3. **Automate data collection:** Deploy the database to a server and automate monthly updates (20th of the month). Make daily predictions at 1 month and 1 year ahead.
-4. **Expand information sources:** Use other sources, such as interest rate, Google maps data, or news stories to improve predictions
-5. **Expand the website:** Improve database analysis and display automated predictions.
+1. **Improve prediction model:**
+    - Estimate the confidence of the prediction, i.e. what error is due to property variance (irreducible) vs model bias (reducible)
+    - Use the location (postcode) of each property
+    - Use a rolling average rather than fixed yearly average
+    - Consider weighting later price-market-ratios as more accurate than older ones
+    - Increase frequency of estimates to monthly
+2. **Deployment:**
+    - Deploy database as DuckLake 
+    - Automate database expansion (new data published on the 20th of each month)
+    - Automate monthly estimates and accuracy measurements
+3. **Website:**
+    - Build interactive website that estimates the real-value of each property (depends on a deployed database)
+    - Show visualisation for each property with historical transactions & geographically similar properties
 
 
 # 📝 Notes on the project
@@ -36,4 +44,39 @@ The full dataset (~ 4.5Gb) and previous months data (~20Mb) is available for dow
 
 ## 📝 Development notes (personal reminders)
 
-The files are saved with `gzip` because when the page is being served on GtiHub pages, `pandas` always tries to decompress the files, which raises an error if they are not compressed. Currently, I am not sure why this is the case.
+### Compile notebotebook to HTML:
+
+Run this command to export the notebook with outputs as an HTML page.
+
+```bash
+uv run marimo export html web/property_price_visualisation.py -o web/output/index.html --no-include-code -f
+```
+
+### Data notes
+- `property_type`: 
+    - Detached
+    - Semi-detached
+    - Terraced
+    - Flat
+    - Other
+- `estate_type`: 
+    - L = Leasehold
+    - C = Freehold
+- `new_build`: 
+    - Y = New build
+    - N = Not a new build
+- `transaction_category`: 
+    - A = residential
+    - B = commercial transaction
+
+
+## SQL with DuckDB
+
+Current pipeline has two steps:
+1. Open a DuckDB instance and experiment with the command that you want to run
+2. Write and run and `.sql` file
+
+These `.sql` files can be run using the following commands:
+```bash
+duckdb -f sql/load_data.sql data/properties.db
+```

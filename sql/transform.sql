@@ -18,10 +18,6 @@ SELECT
 FROM raw_data 
 GROUP BY ALL;
 
--- CREATE OR REPLACE TABLE properties AS ( 
---     select paon, saon, street, locality, town, district, county, postcode, uuid() 
---     AS property_id from raw_data group by all
--- );
 
 CREATE OR REPLACE TABLE transactions (
     unique_id UUID PRIMARY KEY,
@@ -49,9 +45,6 @@ SELECT
     p.property_id
 FROM raw_data r NATURAL JOIN properties p;
 
--- CREATE OR REPLACE VIEW transactions_view AS (
---     SELECT unique_id AS transaction_id, price_paid, deed_date, property_type, estate_type, new_build, transaction_category, property_id FROM raw_data NATURAL JOIN properties
--- );
 
 CREATE OR REPLACE VIEW postcodes AS ( 
     SELECT 

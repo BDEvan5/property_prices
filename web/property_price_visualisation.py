@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.4"
+__generated_with = "0.19.5"
 app = marimo.App()
 
 
@@ -20,7 +20,23 @@ def _(mo):
     mo.md("""
     # Property Price Prediction
 
-    This project aims to predict the price of a property transaction based solely on historical property data.
+
+    > **Challenge:**
+    >
+    > Predict the transaction value for each property that was sold in 2025, using all the data until the end of 2024.
+    > The properties to predict are filtered to include residential transactions, with at least 1 previous sale (of the same estate type) and a value of less than £1M.
+
+    This prediction method can then be applied to estimate the current value of every property in the UK.
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ### Database Statistics (raw data)
+    Transaction data for every property transaction since 1995 is downloaded from [HM Land Registry](https://landregistry.data.gov.uk/).
+    The raw data is loaded into a SQL database (DuckDB) and transformed to have properties and transactions tables.
     """)
     return
 
@@ -34,9 +50,9 @@ def _(mo, np, pd, plt):
     )
 
     md_element = mo.md(f"""
-    - Number of transactions: {int(_df.loc["n_transactions"].item())}
-    - Number of properties: {int(_df.loc["n_properties"].item())}
-    - Mean price (all transactions): {_df.loc["mean_price"].item():.2f} $\pm$ {_df.loc["std_price"].item():.2f}
+    - Number of transactions: {int(_df.loc["n_transactions"].item()):,}
+    - Number of properties: {int(_df.loc["n_properties"].item()):,}
+    - Mean price (all transactions): £{_df.loc["mean_price"].item():,.2f} $\pm$ {_df.loc["std_price"].item():,.2f}
     """)
 
     _path = mo.notebook_location() / "public/price_distribution.csv"
@@ -58,7 +74,230 @@ def _(mo, np, pd, plt):
     plt.gca().spines["top"].set_visible(False)
     plt.gca().spines["right"].set_visible(False)
 
-    mo.vstack([mo.md("""## Database Statistics"""), mo.hstack([_fig, md_element])])
+    mo.hstack([_fig, md_element])
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ### The 2025 Prediction challenge
+
+    The raw data above is cleaned for training and prediction by applying the following filters:
+    - Prices below £1M and above £10k
+    - Remove type 'B' commercial transactions
+    - Houses with constant property types, i.e. remove changes from plot () to house () # I don't think we need this? (D, T, S, O)
+    - Remove houses with multiple transactions on the same day
+    """)
+    return
+
+
+@app.cell
+def _():
+    # TODO: add statistics on the 2025 prediction challenge. How many properties are there?
+    # - how many property transactions do I pick each year compared to all transactions
+    # - Add a distribution of transactions for the 2025 challenge, or barplot per year or something
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    # Modelling Approach
+
+    In predicting the price of a property, I assume that the value of a property relative to the property market remains constant. While it is a simplification, it is neccessary since no data on the style, kind or condition of the house is availble.
+
+    The modelling approach has three steps:
+    1. Calculate the yearly average property price
+    2. Estimate the value of each property relative to the previous year's average
+    3. Use the 2024 average to make predictions for the 2025 transactions
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ### Calculate national yearly average
+    """)
+    return
+
+
+@app.cell
+def _(mo, palette, pd, plt):
+    # TODO: add IQR for the average and possibly remove the volume
+    # Move the volume to the database statistic above for the 2025 challenge
+
+    data_path = mo.notebook_location() / "public" / "avg_yearly_sales.csv"
+    _df = pd.read_csv(str(data_path))
+    hpi_data_path = mo.notebook_location() / "public" / "hpi_avg_yearly_sales.csv"
+    _df_hpi = pd.read_csv(str(hpi_data_path))
+
+    fig, axs = plt.subplots(1, 2, figsize=(10, 4))
+
+    # Plot average price per year
+    axs[0].plot(
+        _df["year"],
+        _df["mean_price"] / 1000,
+        marker="o",
+        color=palette[0],
+        label="National average",
+    )
+    axs[0].plot(
+        _df_hpi["year"],
+        _df_hpi["mean_price"] / 1000,
+        marker="o",
+        color=palette[1],
+        label="HPI",
+    )
+    axs[0].set_title("Average Price per Year (£1k)")
+    axs[0].set_xlabel("Year")
+    axs[0].grid(True)
+    axs[0].spines["top"].set_visible(False)
+    axs[0].spines["right"].set_visible(False)
+    axs[0].legend()
+
+    # Plot sales count per year
+    axs[1].bar(
+        _df["year"] - 0.2,
+        _df["volume"],
+        color=palette[2],
+        label="National average",
+        width=0.4,
+    )
+    axs[1].bar(
+        _df_hpi["year"] + 0.2,
+        _df_hpi["volume"],
+        color=palette[3],
+        label="HPI",
+        width=0.4,
+    )
+    axs[1].set_title("Transactions Count per Year")
+    axs[1].set_xlabel("Year")
+    axs[1].grid(axis="y")
+    axs[1].spines["top"].set_visible(False)
+    axs[1].spines["right"].set_visible(False)
+    axs[1].legend()
+
+    plt.tight_layout()
+    fig  # noqa: B018
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ### Estimate the relative value of each property
+
+    For each property transaction, I divide the price paid by the yearly mean to calculate the price-market-ratio (PMR).
+    The transactions for each property are aggregated to provide a per-property PMR, which is a time-independant measure of value.
+    """)
+    return
+
+
+@app.cell
+def _():
+    # TODO: add analysis on the proportion of mean here.... Distribution?
+    # TODO: analyse the variance of them here -- that is an introduction to error estimation
+
+    # TODO: show how I calculate the PMR for each transaction and then take the average for the house
+
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ### Make Predictions for 2025
+
+    The average property price of 2024, was £XXX,XXX. This average is multipled by each properties PMR
+    """)
+    return
+
+
+@app.cell
+def _():
+    # TODO: show distribution of all predictions
+    # Calculate what the 2025 mean would be?
+    # Show a correlation plot - that can look cool
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    # Analyse predictions
+
+    The predictions are analysed by:
+    - Filtering them to properties that actually sold in 2025
+    - Calculating the prediction accuracy
+    - Investigating the distribution of errors
+    - Showing example predictions (best & worst)
+    """)
+    return
+
+
+@app.cell
+def _():
+    # TODO: filter transactions and show a pie chart or something simple.
+    return
+
+
+@app.cell
+def _():
+    # Calculate total predictions accuracy
+    return
+
+
+@app.cell
+def _():
+    # Show distribution of errors to explain the accuracy
+    return
+
+
+@app.cell
+def _():
+    # Show example predictions for best and worst
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    # Conclusion
+
+    This project used historical price data to predict the selling price of properties in 2025. The price-market-ratio for each house was calculated and used to make a prediction. The method resulted in an accuracy of XX%.
+
+    Future versions of the project plan to:
+    - Model improvements:
+        - Estimate the confidence of the prediction, i.e. what error is due to property variance (irreducible) vs model bias (reducible)
+        - Improve predictions by using the location (postcode) of each property
+        - Use a rolling average rather than fixed yearly average
+    - Deploy database as DuckLake and automate database expansion
+    - Build interactive website that estimates the real-value of each property
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    # Supplementary analysis
+
+    Additional analysis that was performed, but is not essential:
+    - Historical accuracy
+    - Examples with many transactions
+    """)
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell
+def _():
     return
 
 

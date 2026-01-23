@@ -38,10 +38,38 @@ The full dataset (~ 4.5Gb) and previous months data (~20Mb) is available for dow
 
 The files are saved with `gzip` because when the page is being served on GtiHub pages, `pandas` always tries to decompress the files, which raises an error if they are not compressed. Currently, I am not sure why this is the case.
 
-**Compile notebotebook to HTML:**
+### Compile notebotebook to HTML:
 
 Run this command to export the notebook with outputs as an HTML page.
 
 ```bash
 uv run marimo export html web/property_price_visualisation.py -o output_dir/index.html --no-include-code -f
-```
+
+
+### Data notes
+- `property_type`: 
+    - Detached
+    - Semi-detached
+    - Terraced
+    - Flat
+    - Other
+- `estate_type`: 
+    - L = Leasehold
+    - C = Freehold
+- `new_build`: 
+    - Y = New build
+    - N = Not a new build
+- `transaction_category`: 
+    - A = residential
+    - B = commercial transaction
+
+
+
+**SQL planning:**
+- load_data.sql
+- transform.sql -> create tables
+- clean_dataset.sql -> view
+- aggregate_data.sql -> tables
+- calculate_pmr? analyse_data? Just do a make_predictions.sql
+- calculate_accuracy.sql
+- export_data_to_csv - ideally, include this in each step

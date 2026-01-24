@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.5"
+__generated_with = "0.19.6"
 app = marimo.App()
 
 
@@ -457,7 +457,7 @@ def _(gaussian_kde, mo, np, palette, pd, plt):
         bbox={"facecolor": "white", "alpha": 0.5, "edgecolor": "none"},
     )
 
-    plt.show()
+    _fig  # noqa: B018
     return
 
 

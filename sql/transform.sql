@@ -43,7 +43,16 @@ SELECT
     r.new_build, 
     r.transaction_category,
     p.property_id
-FROM raw_data r NATURAL JOIN properties p;
+FROM raw_data r 
+LEFT JOIN properties p 
+    ON r.paon IS NOT DISTINCT FROM p.paon
+    AND r.saon IS NOT DISTINCT FROM p.saon
+    AND r.street IS NOT DISTINCT FROM p.street
+    AND r.locality IS NOT DISTINCT FROM p.locality
+    AND r.town IS NOT DISTINCT FROM p.town
+    AND r.district IS NOT DISTINCT FROM p.district
+    AND r.county IS NOT DISTINCT FROM p.county
+    AND r.postcode IS NOT DISTINCT FROM p.postcode;
 
 
 CREATE OR REPLACE VIEW postcodes AS ( 

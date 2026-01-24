@@ -515,7 +515,6 @@ def _(mo, palette, pd, plt):
     _axs[0].spines["top"].set_visible(False)
     _axs[0].spines["right"].set_visible(False)
     _axs[0].legend(loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.2))
-    _axs[0].set_ylim(0, 300)
 
     _data_path = mo.notebook_location() / "public" / "example_prediction_worst.csv"
     _df2 = pd.read_csv(str(_data_path))
@@ -546,8 +545,6 @@ def _(mo, palette, pd, plt):
     _axs[0].text(x_pos, y_pos, "Best prediction", fontweight="bold")
     _axs[1].text(x_pos, y_pos, "Worst prediction", fontweight="bold")
 
-    plt.xlim(2008.5, 2025.5)
-
     plt.tight_layout()
     _fig  # noqa: B018
     return
@@ -558,7 +555,7 @@ def _(mo):
     mo.md(r"""
     # Conclusion
 
-    This project used historical price data to predict the selling price of properties in 2025. The price-market-ratio for each house was calculated and used to make a prediction. The method resulted in an accuracy of 13.23%.
+    This project used historical price data to predict the selling price of properties in 2025. The price-market-ratio for each house was calculated and used to make a prediction. The method resulted in an accuracy of 10.02%.
 
     Future versions of the project plan to:
     1. Model improvements:

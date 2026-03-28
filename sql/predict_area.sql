@@ -1,8 +1,12 @@
 -- Outward-area PMR baseline: same pattern as national, using area_year_avg and postcode area.
 -- Tables and views here are suffixed _area only (no objects shared with predict_national.sql).
 -- Property PMR uses only transactions with deed_date before 2025 (holdout year for evaluation).
+-- PMR steps are materialised as tables so DuckDB does not re-expand nested views (faster, lower RAM).
 
-CREATE OR REPLACE VIEW transaction_pmr_area AS
+DROP VIEW IF EXISTS transaction_pmr_area;
+DROP VIEW IF EXISTS property_pmr_area;
+
+CREATE OR REPLACE TABLE transaction_pmr_area AS
 SELECT
     t.unique_id AS transaction_id,
     t.property_id,
@@ -13,11 +17,10 @@ INNER JOIN properties AS pr ON t.property_id = pr.property_id
 INNER JOIN postcodes AS pc ON pr.postcode = pc.postcode
 INNER JOIN area_year_avg AS a
     ON year(t.deed_date) - 1 = a.year AND a.area = pc.area
-WHERE a.std_price IS NOT NULL AND a.std_price > 0
     AND t.deed_date < DATE '2025-01-01';
 
 -- Aggregate only from transaction_pmr_area (no second scan of transactions_cleaned).
-CREATE OR REPLACE VIEW property_pmr_area AS
+CREATE OR REPLACE TABLE property_pmr_area AS
 SELECT
     property_id,
     avg(price_market_ratio) AS mean_price_market_ratio,

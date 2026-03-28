@@ -1,4 +1,5 @@
--- All web/public CSV exports for the Marimo notebook and portfolio (run after calculate_accuracy.sql).
+-- Minimal CSVs for the Marimo site (run after calculate_accuracy.sql).
+-- Full 2025 prediction rows are not exported—use metrics, binned errors, and fixed-size samples.
 
 -- --- Raw / exploratory ---
 COPY (
@@ -51,47 +52,7 @@ COPY (
     SELECT 'std_price', stddev_samp(price_paid)::VARCHAR FROM transactions
 ) TO 'web/public/transaction_summary.csv' (FORMAT CSV, HEADER FALSE);
 
-COPY (SELECT * FROM national_year_avg) TO 'web/public/avg_yearly_sales.csv' (FORMAT CSV, HEADER);
 COPY (SELECT * FROM national_year_avg) TO 'web/public/national_year_avg.csv' (FORMAT CSV, HEADER);
-
--- --- 2025 holdout rows ---
-COPY (
-    SELECT
-        deed_date,
-        predicted_price,
-        price_paid,
-        price_paid - predicted_price AS error,
-        (price_paid - predicted_price) / price_paid AS error_percentage
-    FROM predictions_national
-    WHERE year = 2025
-) TO 'web/public/2025_predictions.csv' (FORMAT CSV, HEADER);
-
-COPY (
-    SELECT
-        deed_date,
-        predicted_price,
-        price_paid,
-        price_paid - predicted_price AS error,
-        (price_paid - predicted_price) / price_paid AS error_percentage
-    FROM predictions_national
-    WHERE year = 2025
-) TO 'web/public/2025_predictions_national.csv' (FORMAT CSV, HEADER);
-
-COPY (
-    SELECT
-        deed_date,
-        predicted_price,
-        price_paid,
-        price_paid - predicted_price AS error,
-        (price_paid - predicted_price) / price_paid AS error_percentage
-    FROM predictions_area
-    WHERE year = 2025
-) TO 'web/public/2025_predictions_area.csv' (FORMAT CSV, HEADER);
-
--- --- Accuracy by year ---
-COPY yearly_accuracy_national TO 'web/public/yearly_accuracy.csv' (FORMAT CSV, HEADER);
-COPY yearly_accuracy_national TO 'web/public/yearly_accuracy_national.csv' (FORMAT CSV, HEADER);
-COPY yearly_accuracy_area TO 'web/public/yearly_accuracy_area.csv' (FORMAT CSV, HEADER);
 
 COPY (
     SELECT 'national' AS model, * FROM yearly_accuracy_national
@@ -99,7 +60,76 @@ COPY (
     SELECT 'area' AS model, * FROM yearly_accuracy_area
 ) TO 'web/public/yearly_accuracy_by_model.csv' (FORMAT CSV, HEADER);
 
--- --- Example series (national model): one row per sale ---
+-- --- 2025 holdout (compact): metrics, 1%-wide error bins, fixed samples ---
+COPY (
+    SELECT
+        'national'::VARCHAR AS model,
+        count(*)::BIGINT AS n,
+        avg(abs((price_paid - predicted_price) / price_paid)) AS mean_abs_error_pct,
+        median(abs((price_paid - predicted_price) / price_paid)) AS median_abs_error_pct,
+        avg(abs(price_paid - predicted_price)) AS mean_abs_error_gbp
+    FROM predictions_national
+    WHERE year = 2025
+    UNION ALL
+    SELECT
+        'area'::VARCHAR AS model,
+        count(*)::BIGINT AS n,
+        avg(abs((price_paid - predicted_price) / price_paid)) AS mean_abs_error_pct,
+        median(abs((price_paid - predicted_price) / price_paid)) AS median_abs_error_pct,
+        avg(abs(price_paid - predicted_price)) AS mean_abs_error_gbp
+    FROM predictions_area
+    WHERE year = 2025
+) TO 'web/public/holdout_2025_metrics.csv' (FORMAT CSV, HEADER);
+
+COPY (
+    SELECT
+        'national'::VARCHAR AS model,
+        cast(
+            floor(least(abs((price_paid - predicted_price) / price_paid), 1.0) * 100) AS integer
+        ) AS bin_idx,
+        count(*)::BIGINT AS cnt
+    FROM predictions_national
+    WHERE year = 2025
+    GROUP BY
+        cast(floor(least(abs((price_paid - predicted_price) / price_paid), 1.0) * 100) AS integer)
+    UNION ALL
+    SELECT
+        'area'::VARCHAR AS model,
+        cast(
+            floor(least(abs((price_paid - predicted_price) / price_paid), 1.0) * 100) AS integer
+        ) AS bin_idx,
+        count(*)::BIGINT AS cnt
+    FROM predictions_area
+    WHERE year = 2025
+    GROUP BY
+        cast(floor(least(abs((price_paid - predicted_price) / price_paid), 1.0) * 100) AS integer)
+) TO 'web/public/holdout_2025_error_bins.csv' (FORMAT CSV, HEADER);
+
+COPY (
+    (
+        SELECT
+            'national'::VARCHAR AS model,
+            price_paid,
+            predicted_price
+        FROM predictions_national
+        WHERE year = 2025
+        ORDER BY unique_id
+        LIMIT 8000
+    )
+    UNION ALL
+    (
+        SELECT
+            'area'::VARCHAR AS model,
+            price_paid,
+            predicted_price
+        FROM predictions_area
+        WHERE year = 2025
+        ORDER BY unique_id
+        LIMIT 8000
+    )
+) TO 'web/public/holdout_2025_sample.csv' (FORMAT CSV, HEADER);
+
+-- --- Example series (same property selection as before) ---
 COPY (
     WITH example_properties AS (
         SELECT property_id
@@ -117,6 +147,31 @@ COPY (
     WHERE property_id IN (SELECT property_id FROM example_properties)
     ORDER BY year
 ) TO 'web/public/example_prediction.csv' (FORMAT CSV, HEADER);
+
+COPY (
+    WITH example_properties AS (
+        SELECT property_id
+        FROM transactions_cleaned
+        GROUP BY property_id
+        HAVING count(*) > 5
+        ORDER BY count(*) DESC
+        LIMIT 1
+    ),
+    prop_area AS (
+        SELECT pc.area AS area
+        FROM properties AS pr
+        INNER JOIN postcodes AS pc ON pr.postcode = pc.postcode
+        WHERE pr.property_id IN (SELECT property_id FROM example_properties)
+        LIMIT 1
+    )
+    SELECT
+        a.year,
+        a.mean_price,
+        a.area
+    FROM area_year_avg AS a
+    WHERE a.area = (SELECT area FROM prop_area)
+    ORDER BY a.year
+) TO 'web/public/example_area_year_avg.csv' (FORMAT CSV, HEADER);
 
 COPY (
     WITH example_properties AS (
@@ -165,7 +220,3 @@ COPY (
     WHERE p.property_id IN (SELECT property_id FROM worst_properties)
     ORDER BY p.year
 ) TO 'web/public/example_prediction_worst.csv' (FORMAT CSV, HEADER);
-
--- Optional: uncomment if you add HPI tables to the database.
--- COPY (SELECT * FROM hpi_national_year_avg) TO 'web/public/hpi_avg_yearly_sales.csv' (FORMAT CSV, HEADER);
--- COPY (SELECT * FROM hpi_accuracy) TO 'web/public/hpi_accuracy.csv' (FORMAT CSV, HEADER);

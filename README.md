@@ -44,7 +44,7 @@ duckdb data/properties.db -f sql/export_data_to_csv.sql
 | `predict_national.sql` | `transaction_pmr_national`, `property_pmr_national`, **`predictions_national`** (one row per modelled transaction) |
 | `predict_area.sql` | `transaction_pmr_area`, `property_pmr_area`, **`predictions_area`** |
 | `calculate_accuracy.sql` | `yearly_accuracy_national`, `yearly_accuracy_area`; view **`predictions`** = national (compat) |
-| `export_data_to_csv.sql` | **All** `web/public/*.csv` exports for the notebook |
+| `export_data_to_csv.sql` | Small CSVs for the Marimo site (no full 2025 row dumps—metrics, 1% error bins, 8k-row samples, examples) |
 
 ### Schema notes
 
@@ -52,7 +52,7 @@ duckdb data/properties.db -f sql/export_data_to_csv.sql
 - **`postcodes`**: one row per distinct postcode (regex-derived area fields), materialised as a table in `transform.sql`.
 - **Predictions:** `predictions_national` and `predictions_area` share the same columns: `unique_id`, `property_id`, `deed_date`, `year`, `price_paid`, `predicted_price` — only **actual** cleaned transactions get a row. Property mean PMR is fit on **transactions before 2025** only; later years (including 2025) are still scored using that PMR.
 - **National vs area scripts:** each file only creates objects with the `_national` or `_area` suffix.
-- **Exports:** a single **`export_data_to_csv.sql`** lists every `COPY` for the site.
+- **Exports:** **`export_data_to_csv.sql`** writes only what the notebook needs (e.g. `holdout_2025_metrics.csv`, `holdout_2025_error_bins.csv`, `holdout_2025_sample.csv`). Run the pipeline before `marimo export` so `web/public/` is populated; large prediction CSVs are not committed.
 
 ## Marimo site (local)
 

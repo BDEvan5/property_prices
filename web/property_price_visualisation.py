@@ -20,9 +20,11 @@ def _(mo):
     mo.md("""
     # UK property prices: SQL pipeline and price–market baselines
 
-    **Portfolio project:** [HM Land Registry](https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads) transactions in **DuckDB**, modelled in **SQL** (national vs outward-area aggregates) with **Python** for evaluation and this page.
+    **What this is:** [HM Land Registry](https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads) Price Paid records ingested into **DuckDB**, with **national** and **outward-area** baselines implemented in **SQL** and evaluated in **Python** (this page).
 
-    *Holdout:* per-property PMR is fit on sales **before 2025**; **2025** transactions are scored for error. [Code on GitHub](https://github.com/bdevan5/property_prices).
+    **Evaluation:** Each property’s price–market ratio (PMR) is estimated from sales **before 2025**; **2025** transactions are held out so reported errors are genuinely out-of-sample.
+
+    **Code:** [github.com/bdevan5/property_prices](https://github.com/bdevan5/property_prices)
     """)
     return
 
@@ -31,7 +33,8 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ### Data at a glance
-    Raw CSVs are loaded into DuckDB, normalised into `properties` and `transactions`, and joined to a postcode **area** table for regional aggregates.
+
+    CSVs are loaded into DuckDB, normalised into `properties` and `transactions`, and joined to a postcode **area** table for regional aggregates. The figure and summary statistics describe the modelling set.
     """)
     return
 
@@ -79,9 +82,9 @@ def _(mo):
     mo.md(r"""
     ### Cleaning for modelling
 
-    **Evaluation setup:** predict **2025** sales using information up to **2024** (PMR fit uses pre-2025 transactions only in the SQL pipeline).
+    **Holdout:** 2025 sales are predicted using data only through **2024**—PMRs and aggregates in the SQL pipeline are fit on **pre-2025** transactions.
 
-    Filters applied to transactions:
+    **Filters** (applied to transactions):
     - Price between £10k and £1M
     - Residential only; exclude commercial (type B)
     - Constant property type per property
@@ -132,13 +135,13 @@ def _(mo):
     mo.md(r"""
     ## Modelling approach
 
-    I assume a property’s **price–market ratio** (PMR)—price relative to the previous year’s market mean—is stable over time. That is a strong simplification; there is no information on condition, extensions, or micro-location.
+    The baselines assume a property’s **price–market ratio** (PMR)—price divided by the prior year’s market mean—is stable over time. That is a deliberate simplification: there is no hedonic detail (condition, extensions, micro-location).
 
-    **Two baselines in SQL:**
-    1. **National:** prior-year **UK** mean × mean PMR.
+    **Two SQL baselines:**
+    1. **National:** prior-year **UK** mean × mean PMR (from prior sales).
     2. **Outward area:** prior-year mean for the postcode **area** (e.g. `SW`) × mean PMR.
 
-    Steps: (1) yearly aggregates, (2) per-transaction PMR and per-property average PMR from pre-2025 sales, (3) multiply by the relevant prior-year mean for each actual sale year (including 2025).
+    **Pipeline:** (1) yearly aggregates, (2) per-transaction PMR and per-property average PMR from pre-2025 sales, (3) multiply by the relevant prior-year mean for each sale year (including 2025 holdout).
     """)
     return
 
@@ -147,6 +150,8 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ### 1. National market context
+
+    Long-run UK price levels and dispersion for the cleaned transaction set.
     """)
     return
 
@@ -200,7 +205,7 @@ def _(mo):
     mo.md(r"""
     ### 2. Example property: national vs area PMR
 
-    Same property (most sales in the cleaned set): **left** = UK mean; **right** = outward **area** mean (e.g. `SW`). Lower panels: PMR = price ÷ that year’s mean. Each baseline uses the **mean PMR** (with prior-year means) when forecasting—area tracks local market conditions; national smooths geography.
+    One property with many sales in the cleaned set. **Top row:** UK mean vs outward **area** mean (e.g. `SW`) against sale prices. **Bottom row:** PMR = price ÷ that year’s mean, with the horizontal dashed line showing **mean PMR** used for forecasts. The area baseline tracks local market level; the national baseline smooths geography.
     """)
     return
 
@@ -328,7 +333,7 @@ def _(mo, pd):
         f"""
     ### 3. 2025 holdout predictions
 
-    For each 2025 sale, predicted price = prior-year mean × fitted mean PMR. The **national** baseline uses the **{2024}** UK mean (£{_m2024:,.0f}) times each property’s PMR; the **area** baseline uses the prior-year mean for that property’s outward area.
+    For each 2025 sale, **predicted price = prior-year mean × fitted mean PMR**. The **national** baseline multiplies each property’s PMR by the **{2024}** UK mean (£{_m2024:,.0f}); the **area** baseline uses the prior-year mean for that property’s outward area.
     """
     )
     return
@@ -337,9 +342,9 @@ def _(mo, pd):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## 2025 accuracy (holdout)
+    ## Out-of-sample error (2025)
 
-    Error is absolute percentage: |actual − predicted| / actual. Below: **national** and **outward-area** baselines on the same 2025 sales set (where the area model applies).
+    Error is mean absolute **percentage** error: |actual − predicted| / actual. The table compares **national** and **outward-area** baselines on the same 2025 sales (restricted to rows where the area model applies).
     """)
     return
 
@@ -353,58 +358,21 @@ def _(mo, pd):
     mo.md(f"""
     | Metric | National | Area |
     |--------|--------:|-----:|
-    | Mean abs. error % | {float(_n["mean_abs_error_pct"]) * 100:.2f}% | {float(_a["mean_abs_error_pct"]) * 100:.2f}% |
-    | Median abs. error % | {float(_n["median_abs_error_pct"]) * 100:.2f}% | {float(_a["median_abs_error_pct"]) * 100:.2f}% |
-    | Rows | {int(_n["n"]):,} | {int(_a["n"]):,} |
+    | Mean absolute error % | {float(_n["mean_abs_error_pct"]) * 100:.2f}% | {float(_a["mean_abs_error_pct"]) * 100:.2f}% |
+    | Median absolute error % | {float(_n["median_abs_error_pct"]) * 100:.2f}% | {float(_a["median_abs_error_pct"]) * 100:.2f}% |
+    | Transactions scored | {int(_n["n"]):,} | {int(_a["n"]):,} |
 
-    Mean absolute error in £ (national): £{float(_n["mean_abs_error_gbp"]):,.0f}
+    Mean absolute error in £ (national baseline): £{float(_n["mean_abs_error_gbp"]):,.0f}
     """)
-    return
-
-
-@app.cell
-def _(mo, palette, pd, plt):
-    _bins = pd.read_csv(
-        mo.notebook_location() / "public" / "holdout_2025_error_bins.csv"
-    )
-    _fig, _ax = plt.subplots(figsize=(8, 3.5))
-
-    for _model, _color, _label in (
-        ("national", palette[0], "National"),
-        ("area", palette[2], "Outward area"),
-    ):
-        _sub = _bins[_bins["model"] == _model].sort_values("bin_idx")
-        _n = float(_sub["cnt"].sum())
-        _dens = _sub["cnt"].values / _n
-        _ax.bar(
-            _sub["bin_idx"] + 0.5,
-            _dens,
-            width=1.0,
-            alpha=0.55,
-            color=_color,
-            label=f"{_label} (n={int(_n):,})",
-        )
-
-    _ax.set_xlabel("Absolute error % (1% bins)")
-    _ax.set_ylabel("Fraction of rows")
-    _ax.set_title("2025 holdout: error distribution (full data, binned in SQL)")
-    _ax.set_xlim(0, 100)
-    _ax.grid(axis="y", alpha=0.3)
-    _ax.spines["top"].set_visible(False)
-    _ax.spines["right"].set_visible(False)
-    _ax.legend(frameon=False, loc="upper right")
-
-    plt.tight_layout()
-    _fig
     return
 
 
 @app.cell
 def _(mo):
     mo.md(r"""
-    ### Historical backtest: national vs area
+    ### Rolling backtest by year
 
-    Same methodology by calendar year: mean absolute **percentage** error over all scored transactions. **Area** uses local market means; **national** uses UK means.
+    The same scoring rule applied historically: for each year, mean absolute **percentage** error over transactions scored that year. **Area** uses local prior-year means; **national** uses the UK prior-year mean—so you can see how the gap between baselines evolves over time.
     """)
     return
 
@@ -414,7 +382,7 @@ def _(mo, palette, pd, plt):
     _path = mo.notebook_location() / "public" / "yearly_accuracy_by_model.csv"
     _df = pd.read_csv(_path)
 
-    _fig, _ax = plt.subplots(figsize=(10, 4))
+    _fig, _ax = plt.subplots(figsize=(10, 4.9))
 
     for _model, _color, _label in (
         ("national", palette[0], "National"),
@@ -425,20 +393,48 @@ def _(mo, palette, pd, plt):
             _sub["year"],
             _sub["mean_absolute_error_percentage"] * 100,
             marker="o",
-            markersize=3,
+            markersize=4,
             color=_color,
             label=_label,
-            linewidth=1.8,
+            linewidth=2,
         )
 
-    _ax.set_title("Mean absolute percentage error by year (backtest)")
+    _ax.set_title(
+        "Mean absolute percentage error by year (backtest)",
+        fontsize=12,
+        pad=14,
+    )
     _ax.set_xlabel("Sale year")
-    _ax.set_ylabel("Mean |error| %")
-    _ax.grid(axis="y", alpha=0.3)
+    _ax.set_ylabel("Mean absolute error (%)")
+    _ax.grid(axis="y", alpha=0.35, linestyle="-", linewidth=0.8)
+    _ax.set_axisbelow(True)
     _ax.spines["top"].set_visible(False)
     _ax.spines["right"].set_visible(False)
-    _ax.legend(frameon=False, ncol=2, loc="upper center", bbox_to_anchor=(0.5, 1.12))
-    plt.tight_layout()
+    _ax.legend(
+        ncol=2,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.18),
+        frameon=True,
+        framealpha=0.98,
+        facecolor="white",
+        edgecolor="0.88",
+        fontsize=10,
+        columnspacing=2.0,
+        handletextpad=0.9,
+        borderpad=0.9,
+    )
+    _fig.text(
+        0.5,
+        0.06,
+        "Mean |actual − predicted| / actual by sale year; each year scored using models\n"
+        "fit only on data from earlier years.",
+        ha="center",
+        va="bottom",
+        fontsize=9,
+        color="0.38",
+        linespacing=1.35,
+    )
+    _fig.subplots_adjust(left=0.09, right=0.98, top=0.90, bottom=0.34)
     _fig
     return
 
@@ -446,9 +442,9 @@ def _(mo, palette, pd, plt):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ### 2025: predicted vs actual (fixed sample)
+    ### 2025: predicted vs actual (sample)
 
-    **8,000** national-model rows (deterministic sample from SQL) for the scatter; the right panel is the absolute error % on the same rows. Full distributions are in the binned chart above.
+    **8,000** transactions from the national baseline (deterministic SQL sample): **left**, actual vs predicted price; **right**, the distribution of absolute percentage error on the same rows.
     """)
     return
 
@@ -516,8 +512,10 @@ def _(mo):
     mo.md(r"""
     ### Example: best vs worst national prediction (2025)
 
-    - **Best (low error):** the 2025 sale (markers) sits near the model’s implied track: stable PMR history makes the extrapolation plausible.
-    - **Worst (high error):** the 2025 sale is far from the predicted level—often a sharp change vs prior sales (extension, distress sale, or data quirks), which a PMR-only model cannot see.
+    Two properties illustrate what the baseline can and cannot capture.
+
+    - **Best (low error):** the 2025 sale aligns with the extrapolated track—stable PMR history makes the forecast plausible.
+    - **Worst (high error):** the 2025 sale sits far from the prediction—often a sharp break vs prior sales (e.g. renovation, distress, or data issues), which a PMR-only model cannot infer.
     """)
     return
 
@@ -604,13 +602,13 @@ def _(mo, pd):
         f"""
     ## Summary
 
-    This page shows a **DuckDB/SQL** pipeline on Land Registry data: **national** and **outward-area** price–market baselines, with PMR fit on **pre-2025** sales and **2025** used as a holdout.
+    End-to-end **DuckDB** analytics on Land Registry data: **SQL** aggregates and baselines (**national** vs **outward-area** PMRs), **Python** for evaluation, and a clear **pre-2025 / 2025** holdout split.
 
-    **2025 mean absolute error (national vs area):** {_pct_n:.2f}% vs {_pct_a:.2f}%.
+    **2025 mean absolute percentage error** (national vs area): **{_pct_n:.2f}%** vs **{_pct_a:.2f}%**.
 
-    Limitations: no hedonic features, static PMR assumption, and area effects are coarse. Suitable as a **baseline** and a demonstration of **SQL analytics** plus simple **out-of-sample** checks—not a production valuation model.
+    **Scope:** This is a deliberate baseline—no hedonic features, a static PMR assumption, and coarse geography. It demonstrates **reproducible SQL pipelines**, **honest out-of-sample metrics**, and how far simple structure can go before you need richer modelling.
 
-    Repository: [github.com/bdevan5/property_prices](https://github.com/bdevan5/property_prices)
+    **Repository:** [github.com/bdevan5/property_prices](https://github.com/bdevan5/property_prices)
     """
     )
     return

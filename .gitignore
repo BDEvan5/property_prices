@@ -3,6 +3,8 @@ output_dir/*
 CLAUDE.md
 AGENT.md
 
+outputs/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

@@ -1,3 +1,4 @@
+-- Normalise raw_data into properties, transactions, and postcodes.
 
 CREATE OR REPLACE TABLE properties (
     property_id UUID PRIMARY KEY,
@@ -55,17 +56,10 @@ LEFT JOIN properties p
     AND r.postcode IS NOT DISTINCT FROM p.postcode;
 
 
-CREATE OR REPLACE VIEW postcodes AS ( 
-    SELECT 
-        postcode,
-        -- 1. Area: Leading letters only
-        REGEXP_EXTRACT(postcode, '^([A-Z]+)', 1) AS area,
-        
-        -- 2. District: Everything before the space
-        REGEXP_EXTRACT(postcode, '^([^ ]+)', 1) AS area_district,
-        
-        -- 3. Sector: Everything before the space, plus the space and the first digit
-        REGEXP_EXTRACT(postcode, '^([^ ]+ [0-9])', 1) AS area_district_sector,
-    FROM properties 
-    GROUP BY ALL
-);
+CREATE OR REPLACE TABLE postcodes AS
+SELECT DISTINCT
+    postcode,
+    regexp_extract(postcode, '^([A-Z]+)', 1) AS area,
+    regexp_extract(postcode, '^([^ ]+)', 1) AS area_district,
+    regexp_extract(postcode, '^([^ ]+ [0-9])', 1) AS area_district_sector
+FROM properties;

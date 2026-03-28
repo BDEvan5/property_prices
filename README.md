@@ -1,82 +1,68 @@
-# Property Price Modeling
+# Property price modelling (UK Land Registry)
 
->**🎯 Aim:** 
-> Accurately model (and predict) property transactions in the UK. For example, given a properties address and previous transactions, how accurately can I predict future transactions?
+**UK house prices: DuckDB SQL pipeline plus simple price–market-style predictions; national and outward-postcode-area baselines compared.**
 
-Demo: a current demo is available at: https://bdevan5.github.io/property_prices/
+This repository loads [HM Land Registry price-paid data](https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads), builds a normalised schema in DuckDB, and evaluates two baselines: a **national** mean series and an **outward-area** (e.g. `SW`, `M`) mean series. Each baseline multiplies a property’s historical price–market ratio by the prior year’s aggregate mean to form forward-year predictions, then reports error metrics by year.
 
-## 🧰 Code 
+**Live demo:** [GitHub Pages](https://bdevan5.github.io/property_prices/) (Marimo export of `web/property_price_visualisation.py`).
 
-**SQL files for data processing:**
-- `load_data.sql`: Extract and load transaction data from HM land registry into a SQL database (using DuckDB).
-- `transform.sql`: Transform the raw data to extract property and transaction tables and create a postcode view.
-- `clean_dataset.sql`: Filter transactions to remove anomalies and ensure data quality.
-- `aggregate_yearly.sql`: Aggregate the dataset to find yearly averages for each postcode, region, district, and nationally.
-- `make_predictions.sql`: Calculate z-scores for properties and generate price predictions based on national averages.
-- `calculate_accuracy.sql`: Calculate the accuracy of the predictions against actual transaction data.
-- `export_data_to_csv.sql`: Export various metrics and datasets to CSV for the web visualization.
+## SQL pipeline
 
+Run from the repository root so paths resolve (`data/…`, `web/public/…`).
 
-## 💪 Upcoming tasks
-
-1. **Improve prediction model:**
-    - Estimate the confidence of the prediction, i.e. what error is due to property variance (irreducible) vs model bias (reducible)
-    - Use the location (postcode) of each property
-    - Use a rolling average rather than fixed yearly average
-    - Consider weighting later price-market-ratios as more accurate than older ones
-    - Increase frequency of estimates to monthly
-2. **Deployment:**
-    - Deploy database as DuckLake 
-    - Automate database expansion (new data published on the 20th of each month)
-    - Automate monthly estimates and accuracy measurements
-3. **Website:**
-    - Build interactive website that estimates the real-value of each property (depends on a deployed database)
-    - Show visualisation for each property with historical transactions & geographically similar properties
-
-
-# 📝 Notes on the project
-
-## 💾 Dataset
-
-The dataset comes from the [HM land registry](https://landregistry.data.gov.uk/). 
-The full dataset (~ 4.5Gb) and previous months data (~20Mb) is available for download [here](https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads).
-
-
-## 📝 Development notes (personal reminders)
-
-### Compile notebotebook to HTML:
-
-Run this command to export the notebook with outputs as an HTML page.
+**One command:**
 
 ```bash
+./scripts/run_pipeline.sh
+```
+
+Optional database path (default `data/properties.db`):
+
+```bash
+./scripts/run_pipeline.sh path/to/my.db
+```
+
+**Step by step:**
+
+```bash
+duckdb data/properties.db -f sql/load.sql
+duckdb data/properties.db -f sql/transform.sql
+duckdb data/properties.db -f sql/clean.sql
+duckdb data/properties.db -f sql/aggregate.sql
+duckdb data/properties.db -f sql/predict_national.sql
+duckdb data/properties.db -f sql/predict_area.sql
+duckdb data/properties.db -f sql/calculate_accuracy.sql
+duckdb data/properties.db -f sql/export_data_to_csv.sql
+```
+
+| Script | Purpose |
+|--------|---------|
+| `load.sql` | `raw_data` **view** over the CSV (no extra table copy) |
+| `transform.sql` | `properties`, `transactions`, `postcodes` |
+| `clean.sql` | `transactions_cleaned` / `properties_cleaned` |
+| `aggregate.sql` | `national_year_avg`, `area_year_avg`, district / sector / postcode aggregates |
+| `predict_national.sql` | `transaction_pmr_national`, `property_pmr_national`, **`predictions_national`** (one row per modelled transaction) |
+| `predict_area.sql` | `transaction_pmr_area`, `property_pmr_area`, **`predictions_area`** |
+| `calculate_accuracy.sql` | `yearly_accuracy_national`, `yearly_accuracy_area`; view **`predictions`** = national (compat) |
+| `export_data_to_csv.sql` | Small CSVs for the Marimo site (no full 2025 row dumps—metrics, 1% error bins, 8k-row samples, examples) |
+
+### Schema notes
+
+- **`raw_data`**: view on `read_csv` so Land Registry files are not stored twice; downstream tables are `properties` and `transactions`.
+- **`postcodes`**: one row per distinct postcode (regex-derived area fields), materialised as a table in `transform.sql`.
+- **Predictions:** `predictions_national` and `predictions_area` share the same columns: `unique_id`, `property_id`, `deed_date`, `year`, `price_paid`, `predicted_price` — only **actual** cleaned transactions get a row. Property mean PMR is fit on **transactions before 2025** only; later years (including 2025) are still scored using that PMR.
+- **National vs area scripts:** each file only creates objects with the `_national` or `_area` suffix.
+- **Exports:** **`export_data_to_csv.sql`** writes only what the notebook needs (e.g. `holdout_2025_metrics.csv`, `holdout_2025_error_bins.csv`, `holdout_2025_sample.csv`). Run the pipeline before `marimo export` so `web/public/` is populated; large prediction CSVs are not committed.
+
+## Marimo site (local)
+
+```bash
+uv sync
 uv run marimo export html web/property_price_visualisation.py -o web/output/index.html --no-include-code -f
 ```
 
-### Data notes
-- `property_type`: 
-    - Detached
-    - Semi-detached
-    - Terraced
-    - Flat
-    - Other
-- `estate_type`: 
-    - L = Leasehold
-    - C = Freehold
-- `new_build`: 
-    - Y = New build
-    - N = Not a new build
-- `transaction_category`: 
-    - A = residential
-    - B = commercial transaction
+GitHub Actions on `master` runs `uv sync` and the same export, then deploys `web/output` to Pages.
 
+## Data
 
-## SQL with DuckDB
-
-Current pipeline has two steps:
-1. Open a DuckDB instance and experiment with the command that you want to run
-2. Write and run and `.sql` file
-
-These `.sql` files can be run using the following commands:
-```bash
-duckdb -f sql/load_data.sql data/properties.db
-```
+Source: HM Land Registry. Set the CSV path in `sql/load.sql` under `data/raw_land_registry/` (or another path). Large files are read from disk when queries touch `raw_data` or the derived tables.
